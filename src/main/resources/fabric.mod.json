@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "trading-stalls",
+	"version": "${version}",
+	"name": "Trading Stalls",
+	"description": "Adds simple player-owned trading stalls where players can sell items using custom trades.",
+	"authors": [
+		"KuKuuuu"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/trading-stalls/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.kukuuuu.tradingstalls.TradingStalls"
+		],
+		"fabric-datagen": [
+			"net.kukuuuu.tradingstalls.TradingStallsDataGenerator"
+		],
+		"client": [
+			"net.kukuuuu.tradingstalls.TradingStallsClient"
+		]
+	},
+	"mixins": [
+		"trading-stalls.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
