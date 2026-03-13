@@ -2,6 +2,7 @@ package net.kukuuuu.tradingstalls;
 
 import net.fabricmc.api.ModInitializer;
 
+import net.kukuuuu.tradingstalls.block.ModBlocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +16,7 @@ public class TradingStalls implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		ModBlocks.registerModBlocks();
 
 	}
 }
