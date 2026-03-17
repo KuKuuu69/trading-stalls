@@ -16,8 +16,10 @@ import net.minecraft.util.StringHelper;
 public class ModBlocks {
 
     public static final Block TRADING_BLOCK = registerBlock("trading_block",
-            new Block(AbstractBlock.Settings.create().strength(4f)
-                    .requiresTool().sounds(BlockSoundGroup.WOOD)));
+            new TradingBlock(AbstractBlock.Settings.create()
+                    .strength(2f)
+                    .requiresTool()
+                    .sounds(BlockSoundGroup.WOOD)));
 
     private static Block registerBlock(String name, Block block) {
         registerBlockItem(name, block);
