@@ -1,4 +1,5 @@
 {
-  "block.tradingstalls.trading_block": "Trading Block",
-  "itemgroup.tradingstalls.trading_stalls": "Trading Blocks"
+  "itemgroup.trading-stalls.trading_stalls": "Trading Blocks",
+  "block.trading-stalls.trading_block": "Trading Block",
+  "block.trading-stalls.cash_drawer": "Cash Drawer"
 }

@@ -11,12 +11,17 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.StringHelper;
 
 public class ModBlocks {
 
     public static final Block TRADING_BLOCK = registerBlock("trading_block",
             new TradingBlock(AbstractBlock.Settings.create()
+                    .strength(2f)
+                    .requiresTool()
+                    .sounds(BlockSoundGroup.WOOD)));
+
+    public static final Block CASH_DRAWER = registerBlock("cash_drawer",
+            new CashDrawerBlock(AbstractBlock.Settings.create()
                     .strength(2f)
                     .requiresTool()
                     .sounds(BlockSoundGroup.WOOD)));

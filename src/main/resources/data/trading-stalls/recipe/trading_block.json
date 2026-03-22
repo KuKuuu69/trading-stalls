@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "L": {
+      "item": "minecraft:stripped_oak_log"
+    },
+    "G": {
+      "item": "minecraft:gold_nugget"
+    },
+    "C": {
+      "item": "minecraft:red_carpet"
+    }
+  },
+  "pattern": [
+    "   ",
+    "GCG",
+    "LLL"
+  ],
+  "result": {
+    "count": 1,
+    "id": "trading-stalls:trading_block"
+  }
+}
+

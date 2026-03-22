@@ -14,9 +14,10 @@ public class ModItemGroups {
     public static final ItemGroup TRADING_STALLS_BLOCK_GROUP = Registry.register(Registries.ITEM_GROUP,
             Identifier.of(TradingStalls.MOD_ID, "trading_stalls"),
             FabricItemGroup.builder().icon(() -> new ItemStack(ModBlocks.TRADING_BLOCK))
-                    .displayName(Text.translatable("itemgroup.tradingstalls.trading_stalls"))
+                    .displayName(Text.translatable("itemgroup.trading-stalls.trading_stalls"))
                     .entries((displayContext, entries) -> {
                         entries.add(ModBlocks.TRADING_BLOCK);
+                        entries.add(ModBlocks.CASH_DRAWER);
                     }).build());
 
     public static void registerItemGroups() {
