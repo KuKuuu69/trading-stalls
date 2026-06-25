@@ -13,5 +13,6 @@ public class TradingStallsClient implements ClientModInitializer {
         HandledScreens.register(ModScreenHandlers.MERCHANT, MerchantScreen::new);
         HandledScreens.register(ModScreenHandlers.BUYER, BuyerScreen::new);
         HandledScreens.register(ModScreenHandlers.CASH_DRAWER, CashDrawerScreen::new);
+
     }
 }
