@@ -18,6 +18,22 @@ repositories {
 	// for more information about repositories.
 }
 
+loom {
+	runs {
+		client {
+			configName = "Trading Stalls Owner"
+			programArgs "--username", "TradingStallsDev"
+		}
+		buyerClient {
+			client()
+			configName = "Trading Stalls Buyer"
+			runDir "run-buyer"
+			programArgs "--username", "StallsBuyer"
+			ideConfigGenerated true
+		}
+	}
+}
+
 fabricApi {
 	configureDataGeneration {
 		client = true

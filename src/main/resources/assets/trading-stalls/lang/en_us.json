@@ -1,5 +1,22 @@
 {
   "itemgroup.trading-stalls.trading_stalls": "Trading Blocks",
   "block.trading-stalls.trading_block": "Trading Block",
-  "block.trading-stalls.cash_drawer": "Cash Drawer"
+  "block.trading-stalls.cash_drawer": "Cash Drawer",
+  "screen.trading-stalls.merchant": "Trading Block Setup",
+  "screen.trading-stalls.buyer": "Trading Block",
+  "screen.trading-stalls.cash_drawer": "Cash Drawer",
+  "screen.trading-stalls.stock": "Stock",
+  "screen.trading-stalls.pay": "Pay",
+  "screen.trading-stalls.receive": "Receive",
+  "status.trading-stalls.ready": "Drawer linked",
+  "status.trading-stalls.missing_drawer": "No owned drawer touching",
+  "status.trading-stalls.wrong_owner": "Drawer has another owner",
+  "status.trading-stalls.multiple_drawers": "Multiple owned drawers touching",
+  "availability.trading-stalls.available": "Offer available",
+  "availability.trading-stalls.unconfigured": "Offer not configured",
+  "availability.trading-stalls.out_of_stock": "Out of stock",
+  "availability.trading-stalls.drawer_unavailable": "Cash Drawer unavailable",
+  "availability.trading-stalls.drawer_full": "Cash Drawer full",
+  "message.trading-stalls.not_owner": "You do not own this shop block.",
+  "message.trading-stalls.invalid_offer": "Set both payment and product templates first."
 }

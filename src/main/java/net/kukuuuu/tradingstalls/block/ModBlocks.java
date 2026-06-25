@@ -16,13 +16,13 @@ public class ModBlocks {
 
     public static final Block TRADING_BLOCK = registerBlock("trading_block",
             new TradingBlock(AbstractBlock.Settings.create()
-                    .strength(2f)
+                    .strength(2f, 3600000f)
                     .requiresTool()
                     .sounds(BlockSoundGroup.WOOD)));
 
     public static final Block CASH_DRAWER = registerBlock("cash_drawer",
             new CashDrawerBlock(AbstractBlock.Settings.create()
-                    .strength(2f)
+                    .strength(2f, 3600000f)
                     .requiresTool()
                     .sounds(BlockSoundGroup.WOOD)));
 
@@ -40,6 +40,7 @@ public class ModBlocks {
 
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries ->{
             entries.add(ModBlocks.TRADING_BLOCK);
+            entries.add(ModBlocks.CASH_DRAWER);
         });
     }
 }

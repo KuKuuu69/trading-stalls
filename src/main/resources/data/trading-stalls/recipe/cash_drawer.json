@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "L": {
+      "item": "minecraft:stripped_oak_log"
+    },
+    "P": {
+      "item": "minecraft:oak_planks"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    }
+  },
+  "pattern": [
+    "   ",
+    "LCL",
+    "PPP"
+  ],
+  "result": {
+    "count": 1,
+    "id": "trading-stalls:cash_drawer"
+  }
+}

@@ -3,7 +3,10 @@ package net.kukuuuu.tradingstalls;
 import net.fabricmc.api.ModInitializer;
 
 import net.kukuuuu.tradingstalls.block.ModBlocks;
+import net.kukuuuu.tradingstalls.block.entity.ModBlockEntities;
 import net.kukuuuu.tradingstalls.item.ModItemGroups;
+import net.kukuuuu.tradingstalls.screen.ModScreenHandlers;
+import net.kukuuuu.tradingstalls.shop.ShopProtection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +22,9 @@ public class TradingStalls implements ModInitializer {
 	public void onInitialize() {
 		ModItemGroups.registerItemGroups();
 		ModBlocks.registerModBlocks();
+		ModBlockEntities.register();
+		ModScreenHandlers.register();
+		ShopProtection.register();
 
 	}
 }
