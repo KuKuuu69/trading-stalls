@@ -1,7 +1,8 @@
 {
   "variants": {
-    "": {
-      "model": "trading-stalls:block/cash_drawer"
-    }
+    "facing=north": { "model": "trading-stalls:block/cash_drawer" },
+    "facing=east": { "model": "trading-stalls:block/cash_drawer", "y": 90 },
+    "facing=south": { "model": "trading-stalls:block/cash_drawer", "y": 180 },
+    "facing=west": { "model": "trading-stalls:block/cash_drawer", "y": 270 }
   }
 }

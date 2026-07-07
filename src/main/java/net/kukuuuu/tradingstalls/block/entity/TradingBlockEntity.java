@@ -4,15 +4,22 @@ import net.kukuuuu.tradingstalls.shop.InventoryUtils;
 import net.kukuuuu.tradingstalls.shop.OfferAvailability;
 import net.kukuuuu.tradingstalls.shop.ShopStatus;
 import net.kukuuuu.tradingstalls.shop.TradeOfferData;
+import net.kukuuuu.tradingstalls.shop.VillagerShopVisits;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +28,7 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
     public static final int OFFER_COUNT = 6;
 
     private final List<TradeOfferData> offers = new ArrayList<>(OFFER_COUNT);
+    private final VillagerShopVisits.State villagerVisits = new VillagerShopVisits.State();
 
     public TradingBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TRADING_BLOCK_ENTITY, pos, state);
@@ -41,6 +49,17 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
     public void clearOffer(int index) {
         offers.set(index, TradeOfferData.empty());
         markDirty();
+    }
+
+    public static void serverTick(World world, BlockPos pos, BlockState state, TradingBlockEntity tradingBlock) {
+        if (world instanceof ServerWorld serverWorld) {
+            tradingBlock.villagerVisits.tick(serverWorld, tradingBlock);
+        }
+    }
+
+    public boolean isVillageConnected() {
+        return world instanceof ServerWorld serverWorld
+                && VillagerShopVisits.hasNearbyVillage(serverWorld, pos);
     }
 
     public ShopStatus getShopStatus() {
@@ -120,8 +139,58 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
         InventoryUtils.removeMatching(getInventory(), product, product.getCount());
         drawer.accept(payment);
         paymentInventory.removeStack(paymentSlot, payment.getCount());
-        markDirty();
+        syncInventoryChange();
+        syncBlockEntity(drawer);
         return true;
+    }
+
+    public boolean hasVillagerOffer() {
+        for (int index = 0; index < OFFER_COUNT; index++) {
+            if (canVillagerBuy(index)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean executeRandomVillagerTrade(Random random) {
+        List<Integer> offerIndexes = new ArrayList<>();
+        for (int index = 0; index < OFFER_COUNT; index++) {
+            if (canVillagerBuy(index)) {
+                offerIndexes.add(index);
+            }
+        }
+        if (offerIndexes.isEmpty()) {
+            return false;
+        }
+
+        int offerIndex = offerIndexes.get(random.nextInt(offerIndexes.size()));
+        SimpleInventory generatedPayment = new SimpleInventory(1);
+        generatedPayment.setStack(0, offers.get(offerIndex).payment());
+        return executeTrade(offerIndex, generatedPayment, 0);
+    }
+
+    private boolean canVillagerBuy(int index) {
+        TradeOfferData offer = offers.get(index);
+        return offer.isEnabled()
+                && offer.payment().isOf(Items.EMERALD)
+                && getOfferAvailability(index) == OfferAvailability.AVAILABLE;
+    }
+
+    private void syncInventoryChange() {
+        markDirty();
+        syncBlockEntity(this);
+    }
+
+    private void syncBlockEntity(OwnedInventoryBlockEntity blockEntity) {
+        if (world != null) {
+            world.updateListeners(
+                    blockEntity.getPos(),
+                    blockEntity.getCachedState(),
+                    blockEntity.getCachedState(),
+                    Block.NOTIFY_LISTENERS
+            );
+        }
     }
 
     private CashDrawerBlockEntity findLinkedDrawer() {

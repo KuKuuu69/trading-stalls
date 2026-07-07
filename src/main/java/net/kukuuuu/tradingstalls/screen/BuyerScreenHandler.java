@@ -15,6 +15,21 @@ import net.minecraft.screen.ScreenHandlerContext;
 import net.minecraft.screen.slot.Slot;
 
 public class BuyerScreenHandler extends BaseShopScreenHandler {
+    public static final int OFFER_CARD_X = 5;
+    public static final int OFFER_CARD_WIDTH = 88;
+    public static final int OFFER_CARD_HEIGHT = 20;
+    public static final int OFFER_PAYMENT_X = 73;
+    public static final int OFFER_PRODUCT_X = 11;
+    public static final int OFFER_START_Y = 18;
+    public static final int OFFER_ROW_HEIGHT = 20;
+    public static final int OFFER_SLOT_Y_OFFSET = 2;
+    public static final int PAYMENT_X = 153;
+    public static final int PAYMENT_Y = 37;
+    public static final int OUTPUT_X = 210;
+    public static final int OUTPUT_Y = 38;
+    public static final int PLAYER_INVENTORY_X = 108;
+    public static final int PLAYER_INVENTORY_Y = 84;
+
     private static final int TEMPLATE_SLOT_COUNT = TradingBlockEntity.OFFER_COUNT * 2;
     private static final int PAYMENT_SLOT = TEMPLATE_SLOT_COUNT;
     private static final int OUTPUT_SLOT = PAYMENT_SLOT + 1;
@@ -57,13 +72,13 @@ public class BuyerScreenHandler extends BaseShopScreenHandler {
         this.resultInventory = new SimpleInventory(1);
 
         for (int offer = 0; offer < TradingBlockEntity.OFFER_COUNT; offer++) {
-            int y = 18 + offer * 20;
-            addSlot(new ReadOnlySlot(templates, offer * 2, 40, y));
-            addSlot(new ReadOnlySlot(templates, offer * 2 + 1, 62, y));
+            int slotY = OFFER_START_Y + offer * OFFER_ROW_HEIGHT + OFFER_SLOT_Y_OFFSET;
+            addSlot(new ReadOnlySlot(templates, offer * 2, OFFER_PAYMENT_X, slotY));
+            addSlot(new ReadOnlySlot(templates, offer * 2 + 1, OFFER_PRODUCT_X, slotY));
         }
-        addSlot(new Slot(paymentInventory, 0, 112, 48));
-        addSlot(new OutputSlot(resultInventory, 0, 166, 48));
-        addPlayerInventory(playerInventory, 40, 150);
+        addSlot(new Slot(paymentInventory, 0, PAYMENT_X, PAYMENT_Y));
+        addSlot(new OutputSlot(resultInventory, 0, OUTPUT_X, OUTPUT_Y));
+        addPlayerInventory(playerInventory, PLAYER_INVENTORY_X, PLAYER_INVENTORY_Y);
         addProperties(properties);
 
         paymentInventory.addListener(ignored -> refreshOutput());

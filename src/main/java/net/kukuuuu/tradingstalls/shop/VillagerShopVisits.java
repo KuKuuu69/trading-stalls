@@ -1,0 +1,242 @@
+package net.kukuuuu.tradingstalls.shop;
+
+import net.kukuuuu.tradingstalls.block.entity.TradingBlockEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.item.Items;
+import net.minecraft.registry.tag.PointOfInterestTypeTags;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.TypeFilter;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.village.VillagerProfession;
+import net.minecraft.world.poi.PointOfInterestStorage;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+public final class VillagerShopVisits {
+    public static final int VILLAGE_RADIUS = 64;
+
+    private static final int WORK_START_TIME = 2_000;
+    private static final int WORK_END_TIME = 9_000;
+    private static final int MIN_VISITS_PER_DAY = 8;
+    private static final int MAX_VISITS_PER_DAY = 10;
+    private static final int ARRIVAL_DISTANCE_SQUARED = 4;
+    private static final int WAIT_TICKS_BEFORE_PURCHASE = 40;
+    private static final int VISIT_TIMEOUT_TICKS = 1_200;
+    private static final int REPOLL_NAVIGATION_TICKS = 40;
+    private static final double WALK_SPEED = 0.55D;
+    private static final float SUCCESSFUL_TRADE_CHANCE = 0.60F;
+
+    private VillagerShopVisits() {
+    }
+
+    public static boolean hasNearbyVillage(ServerWorld world, BlockPos pos) {
+        return world.getPointOfInterestStorage()
+                .getNearestPosition(
+                        entry -> entry.isIn(PointOfInterestTypeTags.VILLAGE),
+                        ignored -> true,
+                        pos,
+                        VILLAGE_RADIUS,
+                        PointOfInterestStorage.OccupationStatus.ANY
+                )
+                .isPresent();
+    }
+
+    public static final class State {
+        private long scheduledDay = Long.MIN_VALUE;
+        private final List<Integer> visitTimes = new ArrayList<>();
+        private final Set<UUID> visitedToday = new HashSet<>();
+        private UUID activeVillagerUuid;
+        private long activeVisitStartTime;
+        private int arrivedTicks;
+        private int navigationRetryTicks;
+
+        public void tick(ServerWorld world, TradingBlockEntity tradingBlock) {
+            long timeOfDay = world.getTimeOfDay();
+            long day = timeOfDay / 24_000L;
+            int dayTime = (int) (timeOfDay % 24_000L);
+            if (scheduledDay != day) {
+                scheduleDay(world, tradingBlock, day, dayTime);
+            }
+            tickActiveVisit(world, tradingBlock);
+            tickScheduledVisits(world, tradingBlock, dayTime);
+        }
+
+        private void scheduleDay(ServerWorld world, TradingBlockEntity tradingBlock, long day, int dayTime) {
+            scheduledDay = day;
+            visitTimes.clear();
+            visitedToday.clear();
+            clearActiveVisit();
+            if (!hasNearbyVillage(world, tradingBlock.getPos()) || dayTime > WORK_END_TIME) {
+                return;
+            }
+
+            Random random = world.getRandom();
+            int visits = MIN_VISITS_PER_DAY + random.nextInt(MAX_VISITS_PER_DAY - MIN_VISITS_PER_DAY + 1);
+            int earliestTime = Math.max(dayTime + 100, WORK_START_TIME);
+            for (int index = 0; index < visits; index++) {
+                if (earliestTime >= WORK_END_TIME) {
+                    break;
+                }
+                visitTimes.add(earliestTime + random.nextInt(WORK_END_TIME - earliestTime + 1));
+            }
+            visitTimes.sort(Comparator.naturalOrder());
+        }
+
+        private void tickScheduledVisits(ServerWorld world, TradingBlockEntity tradingBlock, int dayTime) {
+            if (visitTimes.isEmpty()) {
+                return;
+            }
+            if (dayTime > WORK_END_TIME) {
+                visitTimes.clear();
+                return;
+            }
+            if (dayTime < visitTimes.getFirst()) {
+                return;
+            }
+            visitTimes.removeFirst();
+            if (!hasNearbyVillage(world, tradingBlock.getPos()) || !tradingBlock.hasVillagerOffer()) {
+                return;
+            }
+            Random random = world.getRandom();
+            if (random.nextFloat() < SUCCESSFUL_TRADE_CHANCE
+                    && tradingBlock.executeRandomVillagerTrade(random)) {
+                if (activeVillagerUuid == null) {
+                    startVisitorIfPossible(world, tradingBlock);
+                }
+            }
+        }
+
+        private void startVisitorIfPossible(ServerWorld world, TradingBlockEntity tradingBlock) {
+            BlockPos pos = tradingBlock.getPos();
+            Box searchBox = new Box(pos).expand(VILLAGE_RADIUS);
+            List<VillagerEntity> candidates = world.getEntitiesByType(
+                    TypeFilter.instanceOf(VillagerEntity.class),
+                    searchBox,
+                    villager -> isEligibleVisitor(villager) && !visitedToday.contains(villager.getUuid())
+            );
+            if (candidates.isEmpty()) {
+                return;
+            }
+
+            List<VillagerEntity> interested = candidates.stream()
+                    .filter(VillagerShopVisits.State::prefersVisualShopVisit)
+                    .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+            if (interested.isEmpty()) {
+                interested = new ArrayList<>(candidates);
+            }
+            Collections.shuffle(interested);
+            interested.sort(Comparator.comparingDouble(villager -> villager.squaredDistanceTo(
+                    pos.getX() + 0.5D,
+                    pos.getY() + 1.0D,
+                    pos.getZ() + 0.5D
+            )));
+            for (VillagerEntity villager : interested) {
+                if (startVisit(tradingBlock, villager)) {
+                    return;
+                }
+            }
+        }
+
+        private static boolean prefersVisualShopVisit(VillagerEntity villager) {
+            return villager.getVillagerData().getProfession() == VillagerProfession.NONE;
+        }
+
+        private boolean startVisit(TradingBlockEntity tradingBlock, VillagerEntity villager) {
+            BlockPos pos = tradingBlock.getPos();
+            boolean pathStarted = villager.getNavigation().startMovingTo(
+                    pos.getX() + 0.5D,
+                    pos.getY() + 1.0D,
+                    pos.getZ() + 0.5D,
+                    WALK_SPEED
+            );
+            if (!pathStarted) {
+                return false;
+            }
+            visitedToday.add(villager.getUuid());
+            activeVillagerUuid = villager.getUuid();
+            activeVisitStartTime = villager.getWorld().getTime();
+            arrivedTicks = 0;
+            navigationRetryTicks = 0;
+            return true;
+        }
+
+        private void tickActiveVisit(ServerWorld world, TradingBlockEntity tradingBlock) {
+            if (activeVillagerUuid == null) {
+                return;
+            }
+            Entity entity = world.getEntity(activeVillagerUuid);
+            if (!(entity instanceof VillagerEntity villager)
+                    || !isEligibleVisitor(villager)
+                    || world.getTime() - activeVisitStartTime > VISIT_TIMEOUT_TICKS) {
+                clearActiveVisit();
+                return;
+            }
+
+            BlockPos pos = tradingBlock.getPos();
+            if (villager.squaredDistanceTo(pos.getX() + 0.5D, pos.getY() + 1.0D, pos.getZ() + 0.5D)
+                    <= ARRIVAL_DISTANCE_SQUARED) {
+                villager.getNavigation().stop();
+                arrivedTicks++;
+                if (arrivedTicks >= WAIT_TICKS_BEFORE_PURCHASE) {
+                    playTradeFeedback(world, pos);
+                    clearActiveVisit();
+                }
+                return;
+            }
+
+            arrivedTicks = 0;
+            navigationRetryTicks++;
+            if (villager.getNavigation().isIdle() && navigationRetryTicks >= REPOLL_NAVIGATION_TICKS) {
+                navigationRetryTicks = 0;
+                boolean pathStarted = villager.getNavigation().startMovingTo(
+                        pos.getX() + 0.5D,
+                        pos.getY() + 1.0D,
+                        pos.getZ() + 0.5D,
+                        WALK_SPEED
+                );
+                if (!pathStarted) {
+                    clearActiveVisit();
+                }
+            }
+        }
+
+        private void clearActiveVisit() {
+            activeVillagerUuid = null;
+            activeVisitStartTime = 0;
+            arrivedTicks = 0;
+            navigationRetryTicks = 0;
+        }
+
+        private boolean isEligibleVisitor(VillagerEntity villager) {
+            return villager.isAlive()
+                    && !villager.isRemoved()
+                    && !villager.isBaby()
+                    && !villager.isSleeping()
+                    && villager.getVillagerData().getProfession() != VillagerProfession.NITWIT;
+        }
+
+        private void playTradeFeedback(ServerWorld world, BlockPos pos) {
+            world.playSound(
+                    null,
+                    pos.getX() + 0.5D,
+                    pos.getY() + 0.5D,
+                    pos.getZ() + 0.5D,
+                    SoundEvents.ENTITY_VILLAGER_TRADE,
+                    SoundCategory.NEUTRAL,
+                    0.8F,
+                    1.0F
+            );
+        }
+    }
+}

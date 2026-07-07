@@ -19,6 +19,20 @@ import net.minecraft.text.Text;
 public class MerchantScreenHandler extends BaseShopScreenHandler {
     public static final int SAVE_BUTTON_BASE = 0;
     public static final int CLEAR_BUTTON_BASE = 100;
+    public static final int OFFER_PAYMENT_X = 53;
+    public static final int OFFER_PRODUCT_X = 11;
+    public static final int OFFER_START_Y = 22;
+    public static final int OFFER_ROW_HEIGHT = 23;
+    public static final int SAVE_BUTTON_X = 77;
+    public static final int SAVE_BUTTON_Y_OFFSET = 22;
+    public static final int CLEAR_BUTTON_X = 77;
+    public static final int CLEAR_BUTTON_Y_OFFSET = 31;
+    public static final int BUTTON_WIDTH = 9;
+    public static final int BUTTON_HEIGHT = 7;
+    public static final int STOCK_X = 108;
+    public static final int STOCK_Y = 18;
+    public static final int PLAYER_INVENTORY_X = 108;
+    public static final int PLAYER_INVENTORY_Y = 84;
 
     private static final int TEMPLATE_SLOT_COUNT = TradingBlockEntity.OFFER_COUNT * 2;
     private static final int STOCK_START = TEMPLATE_SLOT_COUNT;
@@ -33,13 +47,13 @@ public class MerchantScreenHandler extends BaseShopScreenHandler {
     public MerchantScreenHandler(int syncId, PlayerInventory playerInventory, ShopScreenData data) {
         this(syncId, playerInventory, new SimpleInventory(OwnedInventoryBlockEntity.INVENTORY_SIZE),
                 new SimpleInventory(TEMPLATE_SLOT_COUNT), null, ScreenHandlerContext.EMPTY,
-                new ArrayPropertyDelegate(1));
+                createClientProperties(data));
     }
 
     public MerchantScreenHandler(int syncId, PlayerInventory playerInventory, TradingBlockEntity tradingBlock) {
         this(syncId, playerInventory, tradingBlock.getInventory(), createTemplates(tradingBlock), tradingBlock,
                 ScreenHandlerContext.create(tradingBlock.getWorld(), tradingBlock.getPos()),
-                new ArrayPropertyDelegate(1));
+                new ArrayPropertyDelegate(2));
     }
 
     private MerchantScreenHandler(
@@ -60,18 +74,24 @@ public class MerchantScreenHandler extends BaseShopScreenHandler {
         this.properties = properties;
 
         for (int offer = 0; offer < TradingBlockEntity.OFFER_COUNT; offer++) {
-            int y = 18 + offer * 20;
-            addSlot(new ReadOnlySlot(templates, offer * 2, 8, y));
-            addSlot(new ReadOnlySlot(templates, offer * 2 + 1, 30, y));
+            int y = OFFER_START_Y + offer * OFFER_ROW_HEIGHT;
+            addSlot(new ReadOnlySlot(templates, offer * 2, OFFER_PAYMENT_X, y));
+            addSlot(new ReadOnlySlot(templates, offer * 2 + 1, OFFER_PRODUCT_X, y));
         }
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
-                addSlot(new Slot(stock, column + row * 9, 82 + column * 18, 18 + row * 18));
+                addSlot(new Slot(stock, column + row * 9, STOCK_X + column * 18, STOCK_Y + row * 18));
             }
         }
-        addPlayerInventory(playerInventory, 82, 84);
+        addPlayerInventory(playerInventory, PLAYER_INVENTORY_X, PLAYER_INVENTORY_Y);
         addProperties(properties);
         updateProperties();
+    }
+
+    private static PropertyDelegate createClientProperties(ShopScreenData data) {
+        ArrayPropertyDelegate properties = new ArrayPropertyDelegate(2);
+        properties.set(1, data.villageConnected() ? 1 : 0);
+        return properties;
     }
 
     private static Inventory createTemplates(TradingBlockEntity tradingBlock) {
@@ -168,9 +188,14 @@ public class MerchantScreenHandler extends BaseShopScreenHandler {
         return properties.get(0);
     }
 
+    public boolean isVillageConnected() {
+        return properties.get(1) != 0;
+    }
+
     private void updateProperties() {
         if (tradingBlock != null) {
             properties.set(0, tradingBlock.getShopStatus().ordinal());
+            properties.set(1, tradingBlock.isVillageConnected() ? 1 : 0);
         }
     }
 }
