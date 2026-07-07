@@ -6,12 +6,16 @@ import net.kukuuuu.tradingstalls.block.entity.TradingBlockEntity;
 import net.kukuuuu.tradingstalls.screen.BuyerScreenHandler;
 import net.kukuuuu.tradingstalls.screen.MerchantScreenHandler;
 import net.kukuuuu.tradingstalls.screen.ShopScreenData;
+import net.kukuuuu.tradingstalls.shop.ShopAccess;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -26,6 +30,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 public class TradingBlock extends BlockWithEntity {
     private static final VoxelShape SHAPE = Block.createCuboidShape(0, 0, 0, 16, 6, 16);
@@ -47,6 +52,19 @@ public class TradingBlock extends BlockWithEntity {
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new TradingBlockEntity(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
+            World world,
+            BlockState state,
+            BlockEntityType<T> type
+    ) {
+        return world.isClient
+                ? null
+                : validateTicker(type, net.kukuuuu.tradingstalls.block.entity.ModBlockEntities.TRADING_BLOCK_ENTITY,
+                TradingBlockEntity::serverTick);
     }
 
     @Override
@@ -80,6 +98,15 @@ public class TradingBlock extends BlockWithEntity {
         return ActionResult.CONSUME;
     }
 
+    @Override
+    protected float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView world, BlockPos pos) {
+        if (world.getBlockEntity(pos) instanceof TradingBlockEntity tradingBlock
+                && !ShopAccess.canBreak(player, tradingBlock)) {
+            return 0.0F;
+        }
+        return super.calcBlockBreakingDelta(state, player, world, pos);
+    }
+
     private ExtendedScreenHandlerFactory<ShopScreenData> createScreenFactory(
             TradingBlockEntity tradingBlock,
             boolean merchantView
@@ -87,7 +114,7 @@ public class TradingBlock extends BlockWithEntity {
         return new ExtendedScreenHandlerFactory<>() {
             @Override
             public ShopScreenData getScreenOpeningData(ServerPlayerEntity player) {
-                return new ShopScreenData(tradingBlock.getPos());
+                return new ShopScreenData(tradingBlock.getPos(), merchantView && tradingBlock.isVillageConnected());
             }
 
             @Override

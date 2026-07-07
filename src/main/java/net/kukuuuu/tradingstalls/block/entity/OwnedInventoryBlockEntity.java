@@ -27,6 +27,15 @@ public abstract class OwnedInventoryBlockEntity extends BlockEntity {
         return inventory;
     }
 
+    public boolean hasStoredItems() {
+        for (int slot = 0; slot < inventory.size(); slot++) {
+            if (!inventory.getStack(slot).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean hasOwner() {
         return ownerUuid != null;
     }
