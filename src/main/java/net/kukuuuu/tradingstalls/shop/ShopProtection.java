@@ -14,7 +14,7 @@ public final class ShopProtection {
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             if (world.getBlockEntity(pos) instanceof OwnedInventoryBlockEntity ownedBlock
                     && !ShopAccess.canBreak(player, ownedBlock)) {
-                if (!world.isClient) {
+                if (!world.isClient()) {
                     player.sendMessage(Text.translatable("message.trading-stalls.not_owner"), true);
                 }
                 return ActionResult.FAIL;

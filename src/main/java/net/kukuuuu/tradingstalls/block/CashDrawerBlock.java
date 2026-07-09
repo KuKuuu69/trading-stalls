@@ -21,6 +21,8 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.StateManager;
+import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.math.Direction;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -91,7 +93,7 @@ public class CashDrawerBlock extends BlockWithEntity {
     @Override
     public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
         super.onPlaced(world, pos, state, placer, itemStack);
-        if (!world.isClient && placer instanceof PlayerEntity player
+        if (!world.isClient() && placer instanceof PlayerEntity player
                 && world.getBlockEntity(pos) instanceof CashDrawerBlockEntity drawer) {
             drawer.setOwner(player);
         }
@@ -99,7 +101,7 @@ public class CashDrawerBlock extends BlockWithEntity {
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (world.isClient) {
+        if (world.isClient()) {
             return ActionResult.SUCCESS;
         }
         if (!(world.getBlockEntity(pos) instanceof CashDrawerBlockEntity drawer)) {

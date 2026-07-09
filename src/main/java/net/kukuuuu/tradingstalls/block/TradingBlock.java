@@ -61,7 +61,7 @@ public class TradingBlock extends BlockWithEntity {
             BlockState state,
             BlockEntityType<T> type
     ) {
-        return world.isClient
+        return world.isClient()
                 ? null
                 : validateTicker(type, net.kukuuuu.tradingstalls.block.entity.ModBlockEntities.TRADING_BLOCK_ENTITY,
                 TradingBlockEntity::serverTick);
@@ -75,7 +75,7 @@ public class TradingBlock extends BlockWithEntity {
     @Override
     public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
         super.onPlaced(world, pos, state, placer, itemStack);
-        if (!world.isClient && placer instanceof PlayerEntity player
+        if (!world.isClient() && placer instanceof PlayerEntity player
                 && world.getBlockEntity(pos) instanceof TradingBlockEntity tradingBlock) {
             tradingBlock.setOwner(player);
         }
@@ -83,7 +83,7 @@ public class TradingBlock extends BlockWithEntity {
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (world.isClient) {
+        if (world.isClient()) {
             return ActionResult.SUCCESS;
         }
         if (!(world.getBlockEntity(pos) instanceof TradingBlockEntity tradingBlock)) {
