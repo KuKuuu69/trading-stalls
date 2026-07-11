@@ -2,23 +2,23 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
+    "G": {
+      "item": "minecraft:gold_nugget"
+    },
     "L": {
       "item": "minecraft:stripped_oak_log"
     },
-    "P": {
-      "item": "minecraft:oak_planks"
-    },
-    "C": {
-      "item": "minecraft:copper_ingot"
+    "R": {
+      "item": "minecraft:red_carpet"
     }
   },
   "pattern": [
     "   ",
-    "LCL",
-    "PPP"
+    "GRG",
+    "LLL"
   ],
   "result": {
     "count": 1,
-    "id": "trading-stalls:cash_drawer"
+    "id": "trading-stalls:trading_block"
   }
 }

@@ -21,8 +21,6 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.StateManager;
-import net.minecraft.state.property.EnumProperty;
-import net.minecraft.util.math.Direction;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -40,10 +38,14 @@ import net.minecraft.world.World;
 public class CashDrawerBlock extends BlockWithEntity {
     public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
 
-    private static final VoxelShape SHAPE = VoxelShapes.union(
+    // Base shape, built for Direction.NORTH. The 1-pixel inset is on the +Z (south) side.
+    private static final VoxelShape SHAPE_NORTH = VoxelShapes.union(
             Block.createCuboidShape(0, 0, 0, 16, 14, 15),
             Block.createCuboidShape(0, 14, 0, 16, 16, 16)
     );
+    private static final VoxelShape SHAPE_SOUTH = rotateShape(Direction.SOUTH);
+    private static final VoxelShape SHAPE_EAST = rotateShape(Direction.EAST);
+    private static final VoxelShape SHAPE_WEST = rotateShape(Direction.WEST);
 
     public CashDrawerBlock(Settings settings) {
         super(settings);
@@ -52,12 +54,17 @@ public class CashDrawerBlock extends BlockWithEntity {
 
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return SHAPE;
+        return switch (state.get(FACING)) {
+            case SOUTH -> SHAPE_SOUTH;
+            case EAST -> SHAPE_EAST;
+            case WEST -> SHAPE_WEST;
+            default -> SHAPE_NORTH;
+        };
     }
 
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return SHAPE;
+        return getOutlineShape(state, world, pos, context);
     }
 
     @Override
@@ -155,5 +162,18 @@ public class CashDrawerBlock extends BlockWithEntity {
     @Override
     protected BlockRenderType getRenderType(BlockState state) {
         return BlockRenderType.MODEL;
+    }
+
+    private static VoxelShape rotateShape(Direction to) {
+        VoxelShape[] buffer = new VoxelShape[]{SHAPE_NORTH, VoxelShapes.empty()};
+        int times = ((to.getHorizontal() - Direction.NORTH.getHorizontal()) % 4 + 4) % 4;
+        for (int i = 0; i < times; i++) {
+            buffer[0].forEachBox((minX, minY, minZ, maxX, maxY, maxZ) ->
+                    buffer[1] = VoxelShapes.union(buffer[1], VoxelShapes.cuboid(
+                            1 - maxZ, minY, minX, 1 - minZ, maxY, maxX)));
+            buffer[0] = buffer[1];
+            buffer[1] = VoxelShapes.empty();
+        }
+        return buffer[0];
     }
 }

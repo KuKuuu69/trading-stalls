@@ -26,6 +26,7 @@ import java.util.List;
 
 public class TradingBlockEntity extends OwnedInventoryBlockEntity {
     public static final int OFFER_COUNT = 6;
+    private static final int MAX_VILLAGER_EMERALD_COST = 8;
 
     private final List<TradeOfferData> offers = new ArrayList<>(OFFER_COUNT);
     private final VillagerShopVisits.State villagerVisits = new VillagerShopVisits.State();
@@ -174,6 +175,7 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
         TradeOfferData offer = offers.get(index);
         return offer.isEnabled()
                 && offer.payment().isOf(Items.EMERALD)
+                && offer.payment().getCount() <= MAX_VILLAGER_EMERALD_COST
                 && getOfferAvailability(index) == OfferAvailability.AVAILABLE;
     }
 
