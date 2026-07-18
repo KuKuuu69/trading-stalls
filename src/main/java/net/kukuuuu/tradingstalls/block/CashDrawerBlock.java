@@ -21,7 +21,7 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.StateManager;
-import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.state.property.EnumProperty;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
@@ -36,7 +36,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class CashDrawerBlock extends BlockWithEntity {
-    public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
+    public static final EnumProperty<Direction> FACING = HorizontalFacingBlock.FACING;
 
     // Base shape, built for Direction.NORTH. The 1-pixel inset is on the +Z (south) side.
     private static final VoxelShape SHAPE_NORTH = VoxelShapes.union(

@@ -5,6 +5,7 @@ import net.kukuuuu.tradingstalls.block.entity.TradingBlockEntity;
 import net.kukuuuu.tradingstalls.shop.ShopStatus;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -41,7 +42,7 @@ public class MerchantScreen extends HandledScreen<MerchantScreenHandler> {
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-        context.drawTexture(BACKGROUND_TEXTURE, x, y, 0, 0, backgroundWidth, backgroundHeight,
+        context.drawTexture(RenderLayer::getGuiTextured, BACKGROUND_TEXTURE, x, y, 0, 0, backgroundWidth, backgroundHeight,
                 backgroundWidth, backgroundHeight);
     }
 
@@ -122,7 +123,7 @@ public class MerchantScreen extends HandledScreen<MerchantScreenHandler> {
 
     static Text statusText(int statusIndex) {
         ShopStatus[] statuses = ShopStatus.values();
-        ShopStatus status = statuses[Math.max(0, Math.min(statusIndex, statuses.length - 1))];
+        ShopStatus status = statuses[Math.clamp(statusIndex, 0, statuses.length - 1)];
         return Text.translatable("status.trading-stalls." + status.name().toLowerCase());
     }
 

@@ -2,15 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "G": {
-      "item": "minecraft:gold_nugget"
-    },
-    "L": {
-      "item": "minecraft:stripped_oak_log"
-    },
-    "R": {
-      "item": "minecraft:red_carpet"
-    }
+    "G": "minecraft:gold_nugget",
+    "L": "minecraft:stripped_oak_log",
+    "R": "minecraft:red_carpet"
   },
   "pattern": [
     "   ",

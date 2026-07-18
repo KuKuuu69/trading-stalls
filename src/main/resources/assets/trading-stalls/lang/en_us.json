@@ -2,6 +2,8 @@
   "itemgroup.trading-stalls.trading_stalls": "Trading Stalls",
   "block.trading-stalls.trading_block": "Trading Block",
   "block.trading-stalls.cash_drawer": "Cash Drawer",
+  "item.trading-stalls.trading_block": "Trading Block",
+  "item.trading-stalls.cash_drawer": "Cash Drawer",
   "screen.trading-stalls.merchant": "Trading Block Setup",
   "screen.trading-stalls.buyer": "Trading Block",
   "screen.trading-stalls.cash_drawer": "Cash Drawer",

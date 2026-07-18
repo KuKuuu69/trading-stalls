@@ -1,5 +1,6 @@
 package net.kukuuuu.tradingstalls.block.entity;
 
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.kukuuuu.tradingstalls.TradingStalls;
 import net.kukuuuu.tradingstalls.block.ModBlocks;
 import net.minecraft.block.entity.BlockEntityType;
@@ -15,12 +16,12 @@ public class ModBlockEntities {
         TRADING_BLOCK_ENTITY = Registry.register(
                 Registries.BLOCK_ENTITY_TYPE,
                 Identifier.of(TradingStalls.MOD_ID, "trading_block"),
-                BlockEntityType.Builder.create(TradingBlockEntity::new, ModBlocks.TRADING_BLOCK).build()
+                FabricBlockEntityTypeBuilder.create(TradingBlockEntity::new, ModBlocks.TRADING_BLOCK).build()
         );
         CASH_DRAWER_BLOCK_ENTITY = Registry.register(
                 Registries.BLOCK_ENTITY_TYPE,
                 Identifier.of(TradingStalls.MOD_ID, "cash_drawer"),
-                BlockEntityType.Builder.create(CashDrawerBlockEntity::new, ModBlocks.CASH_DRAWER).build()
+                FabricBlockEntityTypeBuilder.create(CashDrawerBlockEntity::new, ModBlocks.CASH_DRAWER).build()
         );
     }
 }

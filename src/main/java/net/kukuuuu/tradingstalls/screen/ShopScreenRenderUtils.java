@@ -26,7 +26,7 @@ final class ShopScreenRenderUtils {
             int itemX = screenX + slot.x;
             int itemY = screenY + slot.y;
             context.drawItem(stack, itemX, itemY);
-            context.drawItemInSlot(textRenderer, stack, itemX, itemY + STACK_OVERLAY_Y_OFFSET);
+            context.drawStackOverlay(textRenderer, stack, itemX, itemY + STACK_OVERLAY_Y_OFFSET);
         }
     }
 }

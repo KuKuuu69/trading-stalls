@@ -31,8 +31,8 @@ public final class TradeOfferData {
 
     public NbtCompound toNbt(RegistryWrapper.WrapperLookup registries) {
         NbtCompound nbt = new NbtCompound();
-        nbt.put("Payment", payment.encodeAllowEmpty(registries));
-        nbt.put("Product", product.encodeAllowEmpty(registries));
+        nbt.put("Payment", payment.toNbtAllowEmpty(registries));
+        nbt.put("Product", product.toNbtAllowEmpty(registries));
         return nbt;
     }
 

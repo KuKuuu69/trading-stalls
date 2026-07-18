@@ -5,6 +5,7 @@ import net.kukuuuu.tradingstalls.block.entity.TradingBlockEntity;
 import net.kukuuuu.tradingstalls.shop.OfferAvailability;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -38,14 +39,14 @@ public class BuyerScreen extends HandledScreen<BuyerScreenHandler> {
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-        context.drawTexture(BACKGROUND_TEXTURE, x, y, 0, 0, backgroundWidth, backgroundHeight,
+        context.drawTexture(RenderLayer::getGuiTextured, BACKGROUND_TEXTURE, x, y, 0, 0, backgroundWidth, backgroundHeight,
                 backgroundWidth, backgroundHeight);
         for (int offer = 0; offer < TradingBlockEntity.OFFER_COUNT; offer++) {
             if (handler.getOfferAvailability(offer) == OfferAvailability.UNCONFIGURED) {
                 continue;
             }
             int rowY = BuyerScreenHandler.OFFER_START_Y + offer * BuyerScreenHandler.OFFER_ROW_HEIGHT;
-            context.drawTexture(TRADE_CARD_TEXTURE, x + BuyerScreenHandler.OFFER_CARD_X, y + rowY,
+            context.drawTexture(RenderLayer::getGuiTextured, TRADE_CARD_TEXTURE, x + BuyerScreenHandler.OFFER_CARD_X, y + rowY,
                     0, 0, BuyerScreenHandler.OFFER_CARD_WIDTH, BuyerScreenHandler.OFFER_CARD_HEIGHT,
                     BuyerScreenHandler.OFFER_CARD_WIDTH, BuyerScreenHandler.OFFER_CARD_HEIGHT);
             drawOfferStatus(context, offer, rowY);
