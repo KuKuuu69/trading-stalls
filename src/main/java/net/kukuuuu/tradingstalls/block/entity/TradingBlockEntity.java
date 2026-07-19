@@ -13,13 +13,14 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
+import java.util.Optional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -209,23 +210,32 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
     }
 
     @Override
-    protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        super.writeNbt(nbt, registries);
-        NbtList offerList = new NbtList();
+    protected void writeData(WriteView view) {
+        super.writeData(view);
+
+        WriteView.ListAppender<NbtCompound> appender =
+                view.getListAppender("Offers", NbtCompound.CODEC);
+
         for (TradeOfferData offer : offers) {
-            offerList.add(offer.toNbt(registries));
+            appender.add(offer.toNbt());
         }
-        nbt.put("Offers", offerList);
     }
 
     @Override
-    protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        super.readNbt(nbt, registries);
-        NbtList offerList = nbt.getListOrEmpty("Offers");
-        for (int index = 0; index < OFFER_COUNT; index++) {
-            offers.set(index, index < offerList.size()
-                    ? TradeOfferData.fromNbt(offerList.getCompound(index), registries)
-                    : TradeOfferData.empty());
+    protected void readData(ReadView view) {
+        super.readData(view);
+
+        offers.clear();
+
+        view.getOptionalTypedListView("Offers", NbtCompound.CODEC)
+                .ifPresent(list -> {
+                    for (NbtCompound compound : list) {
+                        offers.add(TradeOfferData.fromNbt(Optional.of(compound)));
+                    }
+                });
+
+        while (offers.size() < OFFER_COUNT) {
+            offers.add(TradeOfferData.empty());
         }
     }
 }

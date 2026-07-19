@@ -5,9 +5,9 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.item.ItemStack;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
 
@@ -65,16 +65,20 @@ public abstract class OwnedInventoryBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        super.writeNbt(nbt, registries);
-        nbt.putNullable("Owner", Uuids.CODEC, ownerUuid);
-        nbt.put("Inventory", inventory.toNbtList(registries));
+    protected void writeData(WriteView view) {
+        view.putNullable("Owner", Uuids.CODEC, ownerUuid);
+
+        inventory.toDataList(
+                view.getListAppender("Inventory", ItemStack.CODEC)
+        );
     }
 
     @Override
-    protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        super.readNbt(nbt, registries);
-        ownerUuid = nbt.get("Owner", Uuids.CODEC).orElse(null);
-        inventory.readNbtList(nbt.getListOrEmpty("Inventory"), registries);
+    protected void readData(ReadView view) {
+        ownerUuid = view.read("Owner", Uuids.CODEC).orElse(null);
+
+        view.getOptionalTypedListView("Inventory", ItemStack.CODEC)
+                .ifPresent(inventory::readDataList);
     }
+
 }

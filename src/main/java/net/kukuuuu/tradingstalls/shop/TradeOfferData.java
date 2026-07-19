@@ -2,7 +2,6 @@ package net.kukuuuu.tradingstalls.shop;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryWrapper;
 
 import java.util.Optional;
 
@@ -31,14 +30,14 @@ public final class TradeOfferData {
         return !payment.isEmpty() && !product.isEmpty();
     }
 
-    public NbtCompound toNbt(RegistryWrapper.WrapperLookup registries) {
+    public NbtCompound toNbt() {
         NbtCompound nbt = new NbtCompound();
         nbt.put("Payment", ItemStack.OPTIONAL_CODEC, payment);
         nbt.put("Product", ItemStack.OPTIONAL_CODEC, product);
         return nbt;
     }
 
-    public static TradeOfferData fromNbt(Optional<NbtCompound> nbt, RegistryWrapper.WrapperLookup registries) {
+    public static TradeOfferData fromNbt(Optional<NbtCompound> nbt) {
         ItemStack payment = nbt.flatMap(n -> n.get("Payment", ItemStack.OPTIONAL_CODEC)).orElse(ItemStack.EMPTY);
         ItemStack product = nbt.flatMap(n -> n.get("Product", ItemStack.OPTIONAL_CODEC)).orElse(ItemStack.EMPTY);
         return new TradeOfferData(payment, product);
