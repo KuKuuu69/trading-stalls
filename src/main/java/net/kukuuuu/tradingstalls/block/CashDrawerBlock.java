@@ -166,7 +166,7 @@ public class CashDrawerBlock extends BlockWithEntity {
 
     private static VoxelShape rotateShape(Direction to) {
         VoxelShape[] buffer = new VoxelShape[]{SHAPE_NORTH, VoxelShapes.empty()};
-        int times = ((to.getHorizontal() - Direction.NORTH.getHorizontal()) % 4 + 4) % 4;
+        int times = ((to.getHorizontalQuarterTurns() - Direction.NORTH.getHorizontalQuarterTurns()) % 4 + 4) % 4;
         for (int i = 0; i < times; i++) {
             buffer[0].forEachBox((minX, minY, minZ, maxX, maxY, maxZ) ->
                     buffer[1] = VoxelShapes.union(buffer[1], VoxelShapes.cuboid(

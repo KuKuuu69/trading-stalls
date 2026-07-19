@@ -9,7 +9,7 @@ public record ShopScreenData(BlockPos pos, boolean villageConnected) {
     public static final PacketCodec<RegistryByteBuf, ShopScreenData> PACKET_CODEC = PacketCodec.tuple(
             BlockPos.PACKET_CODEC,
             ShopScreenData::pos,
-            PacketCodecs.BOOL,
+            PacketCodecs.BOOLEAN,
             ShopScreenData::villageConnected,
             ShopScreenData::new
     );
