@@ -149,9 +149,8 @@ public final class VillagerShopVisits {
         }
 
         private static boolean prefersVisualShopVisit(VillagerEntity villager) {
-            return villager.getVillagerData().getProfession() == VillagerProfession.NONE;
+            return villager.getVillagerData().profession().matchesKey(VillagerProfession.NONE);
         }
-
         private boolean startVisit(TradingBlockEntity tradingBlock, VillagerEntity villager) {
             BlockPos pos = tradingBlock.getPos();
             boolean pathStarted = villager.getNavigation().startMovingTo(
@@ -223,7 +222,7 @@ public final class VillagerShopVisits {
                     && !villager.isRemoved()
                     && !villager.isBaby()
                     && !villager.isSleeping()
-                    && villager.getVillagerData().getProfession() != VillagerProfession.NITWIT;
+                    && !villager.getVillagerData().profession().matchesKey(VillagerProfession.NITWIT);
         }
 
         private void playTradeFeedback(ServerWorld world, BlockPos pos) {

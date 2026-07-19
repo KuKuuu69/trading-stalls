@@ -4,6 +4,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
 
+import java.util.Optional;
+
 public final class TradeOfferData {
     private final ItemStack payment;
     private final ItemStack product;
@@ -31,14 +33,14 @@ public final class TradeOfferData {
 
     public NbtCompound toNbt(RegistryWrapper.WrapperLookup registries) {
         NbtCompound nbt = new NbtCompound();
-        nbt.put("Payment", payment.toNbtAllowEmpty(registries));
-        nbt.put("Product", product.toNbtAllowEmpty(registries));
+        nbt.put("Payment", ItemStack.OPTIONAL_CODEC, payment);
+        nbt.put("Product", ItemStack.OPTIONAL_CODEC, product);
         return nbt;
     }
 
-    public static TradeOfferData fromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        ItemStack payment = ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Payment"));
-        ItemStack product = ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Product"));
+    public static TradeOfferData fromNbt(Optional<NbtCompound> nbt, RegistryWrapper.WrapperLookup registries) {
+        ItemStack payment = nbt.flatMap(n -> n.get("Payment", ItemStack.OPTIONAL_CODEC)).orElse(ItemStack.EMPTY);
+        ItemStack product = nbt.flatMap(n -> n.get("Product", ItemStack.OPTIONAL_CODEC)).orElse(ItemStack.EMPTY);
         return new TradeOfferData(payment, product);
     }
 

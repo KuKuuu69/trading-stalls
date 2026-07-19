@@ -221,7 +221,7 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
-        NbtList offerList = nbt.getList("Offers", NbtElement.COMPOUND_TYPE);
+        NbtList offerList = nbt.getListOrEmpty("Offers");
         for (int index = 0; index < OFFER_COUNT; index++) {
             offers.set(index, index < offerList.size()
                     ? TradeOfferData.fromNbt(offerList.getCompound(index), registries)
