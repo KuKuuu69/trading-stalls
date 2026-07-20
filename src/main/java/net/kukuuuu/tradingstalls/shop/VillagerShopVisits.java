@@ -164,7 +164,7 @@ public final class VillagerShopVisits {
             }
             visitedToday.add(villager.getUuid());
             activeVillagerUuid = villager.getUuid();
-            activeVisitStartTime = villager.getWorld().getTime();
+            activeVisitStartTime = villager.getEntityWorld().getTime();
             arrivedTicks = 0;
             navigationRetryTicks = 0;
             return true;

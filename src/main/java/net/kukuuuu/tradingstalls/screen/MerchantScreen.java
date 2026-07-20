@@ -4,6 +4,7 @@ import net.kukuuuu.tradingstalls.TradingStalls;
 import net.kukuuuu.tradingstalls.block.entity.TradingBlockEntity;
 import net.kukuuuu.tradingstalls.shop.ShopStatus;
 import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
@@ -53,20 +54,20 @@ public class MerchantScreen extends HandledScreen<MerchantScreenHandler> {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+    public boolean mouseClicked(Click click, boolean doubled) {
+        if (click.button() == 0) {
             for (int offer = 0; offer < TradingBlockEntity.OFFER_COUNT; offer++) {
-                if (isInsideButton(mouseX, mouseY, offer, MerchantScreenHandler.SAVE_BUTTON_Y_OFFSET)) {
+                if (isInsideButton(click.x(), click.y(), offer, MerchantScreenHandler.SAVE_BUTTON_Y_OFFSET)) {
                     clickHandlerButton(MerchantScreenHandler.SAVE_BUTTON_BASE + offer);
                     return true;
                 }
-                if (isInsideButton(mouseX, mouseY, offer, MerchantScreenHandler.CLEAR_BUTTON_Y_OFFSET)) {
+                if (isInsideButton(click.x(), click.y(), offer, MerchantScreenHandler.CLEAR_BUTTON_Y_OFFSET)) {
                     clickHandlerButton(MerchantScreenHandler.CLEAR_BUTTON_BASE + offer);
                     return true;
                 }
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(click, doubled);
     }
 
     private boolean isInsideButton(double mouseX, double mouseY, int offer, int yOffset) {

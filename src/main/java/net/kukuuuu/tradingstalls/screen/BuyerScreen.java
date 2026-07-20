@@ -4,6 +4,7 @@ import net.kukuuuu.tradingstalls.TradingStalls;
 import net.kukuuuu.tradingstalls.block.entity.TradingBlockEntity;
 import net.kukuuuu.tradingstalls.shop.OfferAvailability;
 import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
@@ -58,18 +59,18 @@ public class BuyerScreen extends HandledScreen<BuyerScreenHandler> {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+    public boolean mouseClicked(Click click, boolean doubled) {
+        if (click.button() == 0) {
             for (int offer = 0; offer < TradingBlockEntity.OFFER_COUNT; offer++) {
                 int rowY = y + BuyerScreenHandler.OFFER_START_Y + offer * BuyerScreenHandler.OFFER_ROW_HEIGHT;
-                if (isInsideTradeCard(mouseX, mouseY, rowY)
+                if (isInsideTradeCard(click.x(), click.y(), rowY)
                         && handler.getOfferAvailability(offer) != OfferAvailability.UNCONFIGURED) {
                     clickOffer(offer);
                     return true;
                 }
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(click, doubled);
     }
 
     private boolean isInsideTradeCard(double mouseX, double mouseY, int rowY) {
