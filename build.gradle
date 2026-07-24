@@ -51,7 +51,7 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
 	//REI artifact
-	modRuntimeOnly "me.shedaniel:RoughlyEnoughItems-fabric:21.9.813"
+	modRuntimeOnly "me.shedaniel:RoughlyEnoughItems-fabric:21.11.816"
 
 
 }
