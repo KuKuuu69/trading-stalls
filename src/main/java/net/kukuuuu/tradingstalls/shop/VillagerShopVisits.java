@@ -35,7 +35,7 @@ public final class VillagerShopVisits {
     private static final int VISIT_TIMEOUT_TICKS = 1_200;
     private static final int REPOLL_NAVIGATION_TICKS = 40;
     private static final double WALK_SPEED = 0.55D;
-    private static final float SUCCESSFUL_TRADE_CHANCE = 0.60F;
+    private static final float SUCCESSFUL_TRADE_CHANCE = 0.45F;
 
     private VillagerShopVisits() {
     }

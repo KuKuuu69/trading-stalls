@@ -21,13 +21,14 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import java.util.Optional;
+import net.kukuuuu.tradingstalls.datagen.ModItemTagProvider;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class TradingBlockEntity extends OwnedInventoryBlockEntity {
     public static final int OFFER_COUNT = 6;
-    private static final int MAX_VILLAGER_EMERALD_COST = 8;
+    private static final int MAX_VILLAGER_EMERALD_COST = 5;
 
     private final List<TradeOfferData> offers = new ArrayList<>(OFFER_COUNT);
     private final VillagerShopVisits.State villagerVisits = new VillagerShopVisits.State();
@@ -71,7 +72,7 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
 
         int matchingDrawers = 0;
         boolean foundWrongOwner = false;
-        for (Direction direction : Direction.values()) {
+        for (Direction direction :new Direction[]{Direction.DOWN}) {
             if (world.getBlockEntity(pos.offset(direction)) instanceof CashDrawerBlockEntity drawer) {
                 if (drawer.isOwnedBy(getOwnerUuid())) {
                     matchingDrawers++;
@@ -177,6 +178,7 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
         return offer.isEnabled()
                 && offer.payment().isOf(Items.EMERALD)
                 && offer.payment().getCount() <= MAX_VILLAGER_EMERALD_COST
+                && offer.product().isIn(ModItemTagProvider.VILLAGER_SELLABLE)
                 && getOfferAvailability(index) == OfferAvailability.AVAILABLE;
     }
 
