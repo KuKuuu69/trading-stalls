@@ -8,7 +8,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
-import org.jspecify.annotations.NonNull;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -23,7 +22,7 @@ public class ModItemTagProvider extends FabricTagProvider.ItemTagProvider {
     }
 
     @Override
-    protected void configure(RegistryWrapper.@NonNull WrapperLookup wrapperLookup) {
+    protected void configure(RegistryWrapper.WrapperLookup wrapperLookup) {
         valueLookupBuilder(VILLAGER_SELLABLE)
                 .add(Items.COAL, Items.CHARCOAL, Items.RAW_IRON, Items.RAW_COPPER, Items.RAW_GOLD)
                 .add(Items.EMERALD, Items.LAPIS_LAZULI, Items.DIAMOND, Items.QUARTZ, Items.AMETHYST_SHARD)
