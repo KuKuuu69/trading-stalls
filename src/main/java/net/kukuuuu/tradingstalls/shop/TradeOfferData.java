@@ -1,9 +1,8 @@
 package net.kukuuuu.tradingstalls.shop;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-
 import java.util.Optional;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
 
 public final class TradeOfferData {
     private final ItemStack payment;
@@ -30,16 +29,16 @@ public final class TradeOfferData {
         return !payment.isEmpty() && !product.isEmpty();
     }
 
-    public NbtCompound toNbt() {
-        NbtCompound nbt = new NbtCompound();
-        nbt.put("Payment", ItemStack.OPTIONAL_CODEC, payment);
-        nbt.put("Product", ItemStack.OPTIONAL_CODEC, product);
+    public CompoundTag toNbt() {
+        CompoundTag nbt = new CompoundTag();
+        nbt.store("Payment", ItemStack.OPTIONAL_CODEC, payment);
+        nbt.store("Product", ItemStack.OPTIONAL_CODEC, product);
         return nbt;
     }
 
-    public static TradeOfferData fromNbt(Optional<NbtCompound> nbt) {
-        ItemStack payment = nbt.flatMap(n -> n.get("Payment", ItemStack.OPTIONAL_CODEC)).orElse(ItemStack.EMPTY);
-        ItemStack product = nbt.flatMap(n -> n.get("Product", ItemStack.OPTIONAL_CODEC)).orElse(ItemStack.EMPTY);
+    public static TradeOfferData fromNbt(Optional<CompoundTag> nbt) {
+        ItemStack payment = nbt.flatMap(n -> n.read("Payment", ItemStack.OPTIONAL_CODEC)).orElse(ItemStack.EMPTY);
+        ItemStack product = nbt.flatMap(n -> n.read("Product", ItemStack.OPTIONAL_CODEC)).orElse(ItemStack.EMPTY);
         return new TradeOfferData(payment, product);
     }
 
@@ -47,6 +46,6 @@ public final class TradeOfferData {
         if (stack.isEmpty()) {
             return ItemStack.EMPTY;
         }
-        return stack.copyWithCount(Math.min(stack.getCount(), stack.getMaxCount()));
+        return stack.copyWithCount(Math.min(stack.getCount(), stack.getMaxStackSize()));
     }
 }

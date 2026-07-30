@@ -1,15 +1,15 @@
 package net.kukuuuu.tradingstalls.screen;
 
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 
 public record ShopScreenData(BlockPos pos, boolean villageConnected) {
-    public static final PacketCodec<RegistryByteBuf, ShopScreenData> PACKET_CODEC = PacketCodec.tuple(
-            BlockPos.PACKET_CODEC,
+    public static final StreamCodec<RegistryFriendlyByteBuf, ShopScreenData> PACKET_CODEC = StreamCodec.composite(
+            BlockPos.STREAM_CODEC,
             ShopScreenData::pos,
-            PacketCodecs.BOOLEAN,
+            ByteBufCodecs.BOOL,
             ShopScreenData::villageConnected,
             ShopScreenData::new
     );

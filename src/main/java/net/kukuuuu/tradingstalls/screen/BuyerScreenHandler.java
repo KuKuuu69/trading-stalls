@@ -4,15 +4,15 @@ import net.kukuuuu.tradingstalls.block.ModBlocks;
 import net.kukuuuu.tradingstalls.block.entity.TradingBlockEntity;
 import net.kukuuuu.tradingstalls.shop.OfferAvailability;
 import net.kukuuuu.tradingstalls.shop.TradeOfferData;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ArrayPropertyDelegate;
-import net.minecraft.screen.PropertyDelegate;
-import net.minecraft.screen.ScreenHandlerContext;
-import net.minecraft.screen.slot.Slot;
+import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.SimpleContainerData;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 public class BuyerScreenHandler extends BaseShopScreenHandler {
     public static final int OFFER_CARD_X = 5;
@@ -37,39 +37,39 @@ public class BuyerScreenHandler extends BaseShopScreenHandler {
     private static final int PLAYER_MAIN_END = PLAYER_START + 27;
     private static final int PLAYER_END = PLAYER_START + 36;
 
-    private final Inventory templates;
-    private final SimpleInventory paymentInventory;
-    private final SimpleInventory resultInventory;
+    private final Container templates;
+    private final SimpleContainer paymentInventory;
+    private final SimpleContainer resultInventory;
     private final TradingBlockEntity tradingBlock;
-    private final ScreenHandlerContext context;
-    private final PropertyDelegate properties;
+    private final ContainerLevelAccess context;
+    private final ContainerData properties;
 
-    public BuyerScreenHandler(int syncId, PlayerInventory playerInventory, ShopScreenData data) {
-        this(syncId, playerInventory, new SimpleInventory(TEMPLATE_SLOT_COUNT), null,
-                ScreenHandlerContext.EMPTY, new ArrayPropertyDelegate(8));
+    public BuyerScreenHandler(int syncId, Inventory playerInventory, ShopScreenData data) {
+        this(syncId, playerInventory, new SimpleContainer(TEMPLATE_SLOT_COUNT), null,
+                ContainerLevelAccess.NULL, new SimpleContainerData(8));
     }
 
-    public BuyerScreenHandler(int syncId, PlayerInventory playerInventory, TradingBlockEntity tradingBlock) {
+    public BuyerScreenHandler(int syncId, Inventory playerInventory, TradingBlockEntity tradingBlock) {
         this(syncId, playerInventory, createTemplates(tradingBlock), tradingBlock,
-                ScreenHandlerContext.create(tradingBlock.getWorld(), tradingBlock.getPos()),
-                new ArrayPropertyDelegate(8));
+                ContainerLevelAccess.create(tradingBlock.getLevel(), tradingBlock.getBlockPos()),
+                new SimpleContainerData(8));
     }
 
     private BuyerScreenHandler(
             int syncId,
-            PlayerInventory playerInventory,
-            Inventory templates,
+            Inventory playerInventory,
+            Container templates,
             TradingBlockEntity tradingBlock,
-            ScreenHandlerContext context,
-            PropertyDelegate properties
+            ContainerLevelAccess context,
+            ContainerData properties
     ) {
         super(ModScreenHandlers.BUYER, syncId);
         this.templates = templates;
         this.tradingBlock = tradingBlock;
         this.context = context;
         this.properties = properties;
-        this.paymentInventory = new SimpleInventory(1);
-        this.resultInventory = new SimpleInventory(1);
+        this.paymentInventory = new SimpleContainer(1);
+        this.resultInventory = new SimpleContainer(1);
 
         for (int offer = 0; offer < TradingBlockEntity.OFFER_COUNT; offer++) {
             int slotY = OFFER_START_Y + offer * OFFER_ROW_HEIGHT + OFFER_SLOT_Y_OFFSET;
@@ -79,36 +79,36 @@ public class BuyerScreenHandler extends BaseShopScreenHandler {
         addSlot(new Slot(paymentInventory, 0, PAYMENT_X, PAYMENT_Y));
         addSlot(new OutputSlot(resultInventory, 0, OUTPUT_X, OUTPUT_Y));
         addPlayerInventory(playerInventory, PLAYER_INVENTORY_X, PLAYER_INVENTORY_Y);
-        addProperties(properties);
+        addDataSlots(properties);
 
         paymentInventory.addListener(ignored -> refreshOutput());
         updateProperties();
         refreshOutput();
     }
 
-    private static Inventory createTemplates(TradingBlockEntity tradingBlock) {
-        SimpleInventory templates = new SimpleInventory(TEMPLATE_SLOT_COUNT);
+    private static Container createTemplates(TradingBlockEntity tradingBlock) {
+        SimpleContainer templates = new SimpleContainer(TEMPLATE_SLOT_COUNT);
         for (int offerIndex = 0; offerIndex < TradingBlockEntity.OFFER_COUNT; offerIndex++) {
             TradeOfferData offer = tradingBlock.getOffer(offerIndex);
-            templates.setStack(offerIndex * 2, offer.payment());
-            templates.setStack(offerIndex * 2 + 1, offer.product());
+            templates.setItem(offerIndex * 2, offer.payment());
+            templates.setItem(offerIndex * 2 + 1, offer.product());
         }
         return templates;
     }
 
     @Override
-    public boolean onButtonClick(PlayerEntity player, int id) {
+    public boolean clickMenuButton(Player player, int id) {
         if (id < 0 || id >= TradingBlockEntity.OFFER_COUNT) {
             return false;
         }
         properties.set(1, id);
         refreshOutput();
-        sendContentUpdates();
+        broadcastChanges();
         return true;
     }
 
     @Override
-    public ItemStack quickMove(PlayerEntity player, int slotIndex) {
+    public ItemStack quickMoveStack(Player player, int slotIndex) {
         if (slotIndex < TEMPLATE_SLOT_COUNT || slotIndex >= slots.size()) {
             return ItemStack.EMPTY;
         }
@@ -122,58 +122,58 @@ public class BuyerScreenHandler extends BaseShopScreenHandler {
                 return ItemStack.EMPTY;
             }
             ItemStack moving = product.copy();
-            insertItem(moving, PLAYER_START, PLAYER_END, true);
+            moveItemStackTo(moving, PLAYER_START, PLAYER_END, true);
             refreshOutput();
             return product;
         }
 
         Slot slot = slots.get(slotIndex);
-        if (!slot.hasStack()) {
+        if (!slot.hasItem()) {
             return ItemStack.EMPTY;
         }
-        ItemStack stack = slot.getStack();
+        ItemStack stack = slot.getItem();
         ItemStack original = stack.copy();
         if (slotIndex == PAYMENT_SLOT) {
-            if (!insertItem(stack, PLAYER_START, PLAYER_END, true)) {
+            if (!moveItemStackTo(stack, PLAYER_START, PLAYER_END, true)) {
                 return ItemStack.EMPTY;
             }
         } else if (slotIndex >= PLAYER_START) {
-            if (!insertItem(stack, PAYMENT_SLOT, PAYMENT_SLOT + 1, false)) {
+            if (!moveItemStackTo(stack, PAYMENT_SLOT, PAYMENT_SLOT + 1, false)) {
                 if (slotIndex < PLAYER_MAIN_END) {
-                    if (!insertItem(stack, PLAYER_MAIN_END, PLAYER_END, false)) {
+                    if (!moveItemStackTo(stack, PLAYER_MAIN_END, PLAYER_END, false)) {
                         return ItemStack.EMPTY;
                     }
-                } else if (!insertItem(stack, PLAYER_START, PLAYER_MAIN_END, false)) {
+                } else if (!moveItemStackTo(stack, PLAYER_START, PLAYER_MAIN_END, false)) {
                     return ItemStack.EMPTY;
                 }
             }
         }
         if (stack.isEmpty()) {
-            slot.setStack(ItemStack.EMPTY);
+            slot.setByPlayer(ItemStack.EMPTY);
         } else {
-            slot.markDirty();
+            slot.setChanged();
         }
         refreshOutput();
         return original;
     }
 
     @Override
-    public boolean canUse(PlayerEntity player) {
-        return tradingBlock == null || canUse(context, player, ModBlocks.TRADING_BLOCK);
+    public boolean stillValid(Player player) {
+        return tradingBlock == null || stillValid(context, player, ModBlocks.TRADING_BLOCK);
     }
 
     @Override
-    public void onClosed(PlayerEntity player) {
-        super.onClosed(player);
-        dropInventory(player, paymentInventory);
+    public void removed(Player player) {
+        super.removed(player);
+        clearContainer(player, paymentInventory);
     }
 
     @Override
-    public void sendContentUpdates() {
+    public void broadcastChanges() {
         syncTemplatesFromBlock();
         updateProperties();
         refreshOutput();
-        super.sendContentUpdates();
+        super.broadcastChanges();
     }
 
     public int getShopStatus() {
@@ -194,13 +194,13 @@ public class BuyerScreenHandler extends BaseShopScreenHandler {
         return values[Math.max(0, Math.min(availability, values.length - 1))];
     }
 
-    private boolean canTakeOutput(PlayerEntity player) {
+    private boolean canTakeOutput(Player player) {
         return tradingBlock != null
-                && canUse(player)
-                && tradingBlock.canTrade(getSelectedOffer(), paymentInventory.getStack(0));
+                && stillValid(player)
+                && tradingBlock.canTrade(getSelectedOffer(), paymentInventory.getItem(0));
     }
 
-    private void completeTrade(PlayerEntity player) {
+    private void completeTrade(Player player) {
         if (canTakeOutput(player)) {
             tradingBlock.executeTrade(getSelectedOffer(), paymentInventory, 0);
             refreshOutput();
@@ -211,8 +211,8 @@ public class BuyerScreenHandler extends BaseShopScreenHandler {
         if (tradingBlock == null) {
             return;
         }
-        ItemStack payment = paymentInventory.getStack(0);
-        resultInventory.setStack(0, tradingBlock.canTrade(getSelectedOffer(), payment)
+        ItemStack payment = paymentInventory.getItem(0);
+        resultInventory.setItem(0, tradingBlock.canTrade(getSelectedOffer(), payment)
                 ? tradingBlock.getOffer(getSelectedOffer()).product()
                 : ItemStack.EMPTY);
     }
@@ -239,30 +239,30 @@ public class BuyerScreenHandler extends BaseShopScreenHandler {
     }
 
     private void setTemplateIfChanged(int slot, ItemStack stack) {
-        if (!ItemStack.areEqual(templates.getStack(slot), stack)) {
-            templates.setStack(slot, stack);
+        if (!ItemStack.matches(templates.getItem(slot), stack)) {
+            templates.setItem(slot, stack);
         }
     }
 
     private class OutputSlot extends Slot {
-        private OutputSlot(Inventory inventory, int index, int x, int y) {
+        private OutputSlot(Container inventory, int index, int x, int y) {
             super(inventory, index, x, y);
         }
 
         @Override
-        public boolean canInsert(ItemStack stack) {
+        public boolean mayPlace(ItemStack stack) {
             return false;
         }
 
         @Override
-        public boolean canTakeItems(PlayerEntity player) {
+        public boolean mayPickup(Player player) {
             return canTakeOutput(player);
         }
 
         @Override
-        public void onTakeItem(PlayerEntity player, ItemStack stack) {
+        public void onTake(Player player, ItemStack stack) {
             completeTrade(player);
-            super.onTakeItem(player, stack);
+            super.onTake(player, stack);
         }
     }
 }

@@ -4,21 +4,19 @@ import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider;
 import net.kukuuuu.tradingstalls.block.ModBlocks;
 import net.kukuuuu.tradingstalls.item.ModItems;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.registry.tag.BlockTags;
-
+import net.minecraft.core.HolderLookup;
+import net.minecraft.tags.BlockTags;
 import java.util.concurrent.CompletableFuture;
 
 public class ModBlockTagProvider extends FabricTagProvider.BlockTagProvider {
 
-    public ModBlockTagProvider(FabricDataOutput output, CompletableFuture<RegistryWrapper.WrapperLookup> registriesFuture) {
+    public ModBlockTagProvider(FabricDataOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture) {
         super(output, registriesFuture);
     }
 
     @Override
-    protected void configure(RegistryWrapper.WrapperLookup lookup) {
-        valueLookupBuilder(BlockTags.AXE_MINEABLE)
+    protected void addTags(HolderLookup.Provider lookup) {
+        valueLookupBuilder(BlockTags.MINEABLE_WITH_AXE)
                 .add(ModBlocks.TRADING_BLOCK)
                 .add(ModBlocks.CASH_DRAWER);
 

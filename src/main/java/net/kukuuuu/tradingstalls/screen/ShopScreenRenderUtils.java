@@ -1,9 +1,9 @@
 package net.kukuuuu.tradingstalls.screen;
 
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.slot.Slot;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 final class ShopScreenRenderUtils {
     private static final int STACK_OVERLAY_Y_OFFSET = -1;
@@ -12,21 +12,21 @@ final class ShopScreenRenderUtils {
     }
 
     static void redrawStacksWithRaisedOverlay(
-            DrawContext context,
-            TextRenderer textRenderer,
+            GuiGraphics context,
+            Font textRenderer,
             Iterable<Slot> slots,
             int screenX,
             int screenY
     ) {
         for (Slot slot : slots) {
-            ItemStack stack = slot.getStack();
+            ItemStack stack = slot.getItem();
             if (stack.isEmpty()) {
                 continue;
             }
             int itemX = screenX + slot.x;
             int itemY = screenY + slot.y;
-            context.drawItem(stack, itemX, itemY);
-            context.drawStackOverlay(textRenderer, stack, itemX, itemY + STACK_OVERLAY_Y_OFFSET);
+            context.renderItem(stack, itemX, itemY);
+            context.renderItemDecorations(textRenderer, stack, itemX, itemY + STACK_OVERLAY_Y_OFFSET);
         }
     }
 }

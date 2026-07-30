@@ -1,36 +1,35 @@
 package net.kukuuuu.tradingstalls.block.entity;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.storage.ReadView;
-import net.minecraft.storage.WriteView;
-import net.minecraft.util.Uuids;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 public abstract class OwnedInventoryBlockEntity extends BlockEntity {
     public static final int INVENTORY_SIZE = 27;
 
-    private final SimpleInventory inventory = new SimpleInventory(INVENTORY_SIZE);
+    private final SimpleContainer inventory = new SimpleContainer(INVENTORY_SIZE);
     private UUID ownerUuid;
 
     protected OwnedInventoryBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
-        inventory.addListener(ignored -> markDirty());
+        inventory.addListener(ignored -> setChanged());
     }
 
-    public SimpleInventory getInventory() {
+    public SimpleContainer getInventory() {
         return inventory;
     }
 
     public boolean hasStoredItems() {
-        for (int slot = 0; slot < inventory.size(); slot++) {
-            if (!inventory.getStack(slot).isEmpty()) {
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            if (!inventory.getItem(slot).isEmpty()) {
                 return true;
             }
         }
@@ -45,40 +44,40 @@ public abstract class OwnedInventoryBlockEntity extends BlockEntity {
         return ownerUuid;
     }
 
-    public boolean isOwner(PlayerEntity player) {
-        return ownerUuid != null && ownerUuid.equals(player.getUuid());
+    public boolean isOwner(Player player) {
+        return ownerUuid != null && ownerUuid.equals(player.getUUID());
     }
 
     public boolean isOwnedBy(UUID uuid) {
         return ownerUuid != null && ownerUuid.equals(uuid);
     }
 
-    public void setOwner(PlayerEntity player) {
-        setOwner(player.getUuid());
+    public void setOwner(Player player) {
+        setOwner(player.getUUID());
     }
 
     public void setOwner(UUID uuid) {
         if (ownerUuid == null) {
             ownerUuid = uuid;
-            markDirty();
+            setChanged();
         }
     }
 
     @Override
-    protected void writeData(WriteView view) {
-        view.putNullable("Owner", Uuids.CODEC, ownerUuid);
+    protected void saveAdditional(ValueOutput view) {
+        view.storeNullable("Owner", UUIDUtil.AUTHLIB_CODEC, ownerUuid);
 
-        inventory.toDataList(
-                view.getListAppender("Inventory", ItemStack.CODEC)
+        inventory.storeAsItemList(
+                view.list("Inventory", ItemStack.CODEC)
         );
     }
 
     @Override
-    protected void readData(ReadView view) {
-        ownerUuid = view.read("Owner", Uuids.CODEC).orElse(null);
+    protected void loadAdditional(ValueInput view) {
+        ownerUuid = view.read("Owner", UUIDUtil.AUTHLIB_CODEC).orElse(null);
 
-        view.getOptionalTypedListView("Inventory", ItemStack.CODEC)
-                .ifPresent(inventory::readDataList);
+        view.list("Inventory", ItemStack.CODEC)
+                .ifPresent(inventory::fromItemList);
     }
 
 }

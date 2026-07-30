@@ -3,18 +3,17 @@ package net.kukuuuu.tradingstalls.datagen;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
 import net.kukuuuu.tradingstalls.block.ModBlocks;
-import net.minecraft.data.recipe.RecipeExporter;
-import net.minecraft.data.recipe.RecipeGenerator;
-import net.minecraft.data.recipe.ShapedRecipeJsonBuilder;
-import net.minecraft.item.Items;
-import net.minecraft.recipe.book.RecipeCategory;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.RegistryWrapper;
-
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.data.recipes.RecipeCategory;
+import net.minecraft.data.recipes.RecipeOutput;
+import net.minecraft.data.recipes.RecipeProvider;
+import net.minecraft.data.recipes.ShapedRecipeBuilder;
+import net.minecraft.world.item.Items;
 import java.util.concurrent.CompletableFuture;
 
 public class ModRecipeProvider extends FabricRecipeProvider {
-    public ModRecipeProvider(FabricDataOutput output, CompletableFuture<RegistryWrapper.WrapperLookup> registriesFuture) {
+    public ModRecipeProvider(FabricDataOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture) {
         super(output, registriesFuture);
     }
 
@@ -26,31 +25,31 @@ public class ModRecipeProvider extends FabricRecipeProvider {
     }
 
     @Override
-    protected RecipeGenerator getRecipeGenerator(RegistryWrapper.WrapperLookup registryLookup, RecipeExporter exporter) {
-        var itemLookup = registryLookup.getOrThrow(RegistryKeys.ITEM);
+    protected RecipeProvider createRecipeProvider(HolderLookup.Provider registryLookup, RecipeOutput exporter) {
+        var itemLookup = registryLookup.lookupOrThrow(Registries.ITEM);
 
-        return new RecipeGenerator(registryLookup, exporter) {
+        return new RecipeProvider(registryLookup, exporter) {
             @Override
-            public void generate() {
-                ShapedRecipeJsonBuilder.create(itemLookup, RecipeCategory.MISC, ModBlocks.CASH_DRAWER)
+            public void buildRecipes() {
+                ShapedRecipeBuilder.shaped(itemLookup, RecipeCategory.MISC, ModBlocks.CASH_DRAWER)
                         .pattern("   ")
                         .pattern("LCL")
                         .pattern("PPP")
-                        .input('L', Items.STRIPPED_OAK_LOG)
-                        .input('C', Items.COPPER_INGOT)
-                        .input('P', Items.OAK_PLANKS)
-                        .criterion(hasItem(Items.COPPER_INGOT), conditionsFromItem(Items.COPPER_INGOT))
-                        .offerTo(exporter);
+                        .define('L', Items.STRIPPED_OAK_LOG)
+                        .define('C', Items.COPPER_INGOT)
+                        .define('P', Items.OAK_PLANKS)
+                        .unlockedBy(getHasName(Items.COPPER_INGOT), has(Items.COPPER_INGOT))
+                        .save(output);
 
-                ShapedRecipeJsonBuilder.create(itemLookup, RecipeCategory.MISC, ModBlocks.TRADING_BLOCK)
+                ShapedRecipeBuilder.shaped(itemLookup, RecipeCategory.MISC, ModBlocks.TRADING_BLOCK)
                         .pattern("   ")
                         .pattern("GRG")
                         .pattern("LLL")
-                        .input('G', Items.GOLD_NUGGET)
-                        .input('R', Items.RED_CARPET)
-                        .input('L', Items.STRIPPED_OAK_LOG)
-                        .criterion(hasItem(Items.GOLD_NUGGET), conditionsFromItem(Items.GOLD_NUGGET))
-                        .offerTo(exporter);
+                        .define('G', Items.GOLD_NUGGET)
+                        .define('R', Items.RED_CARPET)
+                        .define('L', Items.STRIPPED_OAK_LOG)
+                        .unlockedBy(getHasName(Items.GOLD_NUGGET), has(Items.GOLD_NUGGET))
+                        .save(output);
             }
         };
     }

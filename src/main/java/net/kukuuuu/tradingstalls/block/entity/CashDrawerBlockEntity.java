@@ -1,9 +1,9 @@
 package net.kukuuuu.tradingstalls.block.entity;
 
 import net.kukuuuu.tradingstalls.shop.InventoryUtils;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class CashDrawerBlockEntity extends OwnedInventoryBlockEntity {
     public CashDrawerBlockEntity(BlockPos pos, BlockState state) {

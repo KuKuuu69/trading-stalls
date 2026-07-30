@@ -1,20 +1,18 @@
 package net.kukuuuu.tradingstalls.shop;
 
 import net.kukuuuu.tradingstalls.block.entity.TradingBlockEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.item.Items;
-import net.minecraft.registry.tag.PointOfInterestTypeTags;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.TypeFilter;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.village.VillagerProfession;
-import net.minecraft.world.poi.PointOfInterestStorage;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.PoiTypeTags;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ai.village.poi.PoiManager;
+import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.entity.npc.villager.VillagerProfession;
+import net.minecraft.world.level.entity.EntityTypeTest;
+import net.minecraft.world.phys.AABB;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -40,14 +38,14 @@ public final class VillagerShopVisits {
     private VillagerShopVisits() {
     }
 
-    public static boolean hasNearbyVillage(ServerWorld world, BlockPos pos) {
-        return world.getPointOfInterestStorage()
-                .getNearestPosition(
-                        entry -> entry.isIn(PointOfInterestTypeTags.VILLAGE),
+    public static boolean hasNearbyVillage(ServerLevel world, BlockPos pos) {
+        return world.getPoiManager()
+                .findClosest(
+                        entry -> entry.is(PoiTypeTags.VILLAGE),
                         ignored -> true,
                         pos,
                         VILLAGE_RADIUS,
-                        PointOfInterestStorage.OccupationStatus.ANY
+                        PoiManager.Occupancy.ANY
                 )
                 .isPresent();
     }
@@ -61,8 +59,8 @@ public final class VillagerShopVisits {
         private int arrivedTicks;
         private int navigationRetryTicks;
 
-        public void tick(ServerWorld world, TradingBlockEntity tradingBlock) {
-            long timeOfDay = world.getTimeOfDay();
+        public void tick(ServerLevel world, TradingBlockEntity tradingBlock) {
+            long timeOfDay = world.getDayTime();
             long day = timeOfDay / 24_000L;
             int dayTime = (int) (timeOfDay % 24_000L);
             if (scheduledDay != day) {
@@ -72,16 +70,16 @@ public final class VillagerShopVisits {
             tickScheduledVisits(world, tradingBlock, dayTime);
         }
 
-        private void scheduleDay(ServerWorld world, TradingBlockEntity tradingBlock, long day, int dayTime) {
+        private void scheduleDay(ServerLevel world, TradingBlockEntity tradingBlock, long day, int dayTime) {
             scheduledDay = day;
             visitTimes.clear();
             visitedToday.clear();
             clearActiveVisit();
-            if (!hasNearbyVillage(world, tradingBlock.getPos()) || dayTime > WORK_END_TIME) {
+            if (!hasNearbyVillage(world, tradingBlock.getBlockPos()) || dayTime > WORK_END_TIME) {
                 return;
             }
 
-            Random random = world.getRandom();
+            RandomSource random = world.getRandom();
             int visits = MIN_VISITS_PER_DAY + random.nextInt(MAX_VISITS_PER_DAY - MIN_VISITS_PER_DAY + 1);
             int earliestTime = Math.max(dayTime + 100, WORK_START_TIME);
             for (int index = 0; index < visits; index++) {
@@ -93,7 +91,7 @@ public final class VillagerShopVisits {
             visitTimes.sort(Comparator.naturalOrder());
         }
 
-        private void tickScheduledVisits(ServerWorld world, TradingBlockEntity tradingBlock, int dayTime) {
+        private void tickScheduledVisits(ServerLevel world, TradingBlockEntity tradingBlock, int dayTime) {
             if (visitTimes.isEmpty()) {
                 return;
             }
@@ -105,10 +103,10 @@ public final class VillagerShopVisits {
                 return;
             }
             visitTimes.removeFirst();
-            if (!hasNearbyVillage(world, tradingBlock.getPos()) || !tradingBlock.hasVillagerOffer()) {
+            if (!hasNearbyVillage(world, tradingBlock.getBlockPos()) || !tradingBlock.hasVillagerOffer()) {
                 return;
             }
-            Random random = world.getRandom();
+            RandomSource random = world.getRandom();
             if (random.nextFloat() < SUCCESSFUL_TRADE_CHANCE
                     && tradingBlock.executeRandomVillagerTrade(random)) {
                 if (activeVillagerUuid == null) {
@@ -117,43 +115,43 @@ public final class VillagerShopVisits {
             }
         }
 
-        private void startVisitorIfPossible(ServerWorld world, TradingBlockEntity tradingBlock) {
-            BlockPos pos = tradingBlock.getPos();
-            Box searchBox = new Box(pos).expand(VILLAGE_RADIUS);
-            List<VillagerEntity> candidates = world.getEntitiesByType(
-                    TypeFilter.instanceOf(VillagerEntity.class),
+        private void startVisitorIfPossible(ServerLevel world, TradingBlockEntity tradingBlock) {
+            BlockPos pos = tradingBlock.getBlockPos();
+            AABB searchBox = new AABB(pos).inflate(VILLAGE_RADIUS);
+            List<Villager> candidates = world.getEntities(
+                    EntityTypeTest.forClass(Villager.class),
                     searchBox,
-                    villager -> isEligibleVisitor(villager) && !visitedToday.contains(villager.getUuid())
+                    villager -> isEligibleVisitor(villager) && !visitedToday.contains(villager.getUUID())
             );
             if (candidates.isEmpty()) {
                 return;
             }
 
-            List<VillagerEntity> interested = candidates.stream()
+            List<Villager> interested = candidates.stream()
                     .filter(VillagerShopVisits.State::prefersVisualShopVisit)
                     .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
             if (interested.isEmpty()) {
                 interested = new ArrayList<>(candidates);
             }
             Collections.shuffle(interested);
-            interested.sort(Comparator.comparingDouble(villager -> villager.squaredDistanceTo(
+            interested.sort(Comparator.comparingDouble(villager -> villager.distanceToSqr(
                     pos.getX() + 0.5D,
                     pos.getY() + 1.0D,
                     pos.getZ() + 0.5D
             )));
-            for (VillagerEntity villager : interested) {
+            for (Villager villager : interested) {
                 if (startVisit(tradingBlock, villager)) {
                     return;
                 }
             }
         }
 
-        private static boolean prefersVisualShopVisit(VillagerEntity villager) {
-            return villager.getVillagerData().profession().matchesKey(VillagerProfession.NONE);
+        private static boolean prefersVisualShopVisit(Villager villager) {
+            return villager.getVillagerData().profession().is(VillagerProfession.NONE);
         }
-        private boolean startVisit(TradingBlockEntity tradingBlock, VillagerEntity villager) {
-            BlockPos pos = tradingBlock.getPos();
-            boolean pathStarted = villager.getNavigation().startMovingTo(
+        private boolean startVisit(TradingBlockEntity tradingBlock, Villager villager) {
+            BlockPos pos = tradingBlock.getBlockPos();
+            boolean pathStarted = villager.getNavigation().moveTo(
                     pos.getX() + 0.5D,
                     pos.getY() + 1.0D,
                     pos.getZ() + 0.5D,
@@ -162,28 +160,28 @@ public final class VillagerShopVisits {
             if (!pathStarted) {
                 return false;
             }
-            visitedToday.add(villager.getUuid());
-            activeVillagerUuid = villager.getUuid();
-            activeVisitStartTime = villager.getEntityWorld().getTime();
+            visitedToday.add(villager.getUUID());
+            activeVillagerUuid = villager.getUUID();
+            activeVisitStartTime = villager.level().getGameTime();
             arrivedTicks = 0;
             navigationRetryTicks = 0;
             return true;
         }
 
-        private void tickActiveVisit(ServerWorld world, TradingBlockEntity tradingBlock) {
+        private void tickActiveVisit(ServerLevel world, TradingBlockEntity tradingBlock) {
             if (activeVillagerUuid == null) {
                 return;
             }
             Entity entity = world.getEntity(activeVillagerUuid);
-            if (!(entity instanceof VillagerEntity villager)
+            if (!(entity instanceof Villager villager)
                     || !isEligibleVisitor(villager)
-                    || world.getTime() - activeVisitStartTime > VISIT_TIMEOUT_TICKS) {
+                    || world.getGameTime() - activeVisitStartTime > VISIT_TIMEOUT_TICKS) {
                 clearActiveVisit();
                 return;
             }
 
-            BlockPos pos = tradingBlock.getPos();
-            if (villager.squaredDistanceTo(pos.getX() + 0.5D, pos.getY() + 1.0D, pos.getZ() + 0.5D)
+            BlockPos pos = tradingBlock.getBlockPos();
+            if (villager.distanceToSqr(pos.getX() + 0.5D, pos.getY() + 1.0D, pos.getZ() + 0.5D)
                     <= ARRIVAL_DISTANCE_SQUARED) {
                 villager.getNavigation().stop();
                 arrivedTicks++;
@@ -196,9 +194,9 @@ public final class VillagerShopVisits {
 
             arrivedTicks = 0;
             navigationRetryTicks++;
-            if (villager.getNavigation().isIdle() && navigationRetryTicks >= REPOLL_NAVIGATION_TICKS) {
+            if (villager.getNavigation().isDone() && navigationRetryTicks >= REPOLL_NAVIGATION_TICKS) {
                 navigationRetryTicks = 0;
-                boolean pathStarted = villager.getNavigation().startMovingTo(
+                boolean pathStarted = villager.getNavigation().moveTo(
                         pos.getX() + 0.5D,
                         pos.getY() + 1.0D,
                         pos.getZ() + 0.5D,
@@ -217,22 +215,22 @@ public final class VillagerShopVisits {
             navigationRetryTicks = 0;
         }
 
-        private boolean isEligibleVisitor(VillagerEntity villager) {
+        private boolean isEligibleVisitor(Villager villager) {
             return villager.isAlive()
                     && !villager.isRemoved()
                     && !villager.isBaby()
                     && !villager.isSleeping()
-                    && !villager.getVillagerData().profession().matchesKey(VillagerProfession.NITWIT);
+                    && !villager.getVillagerData().profession().is(VillagerProfession.NITWIT);
         }
 
-        private void playTradeFeedback(ServerWorld world, BlockPos pos) {
+        private void playTradeFeedback(ServerLevel world, BlockPos pos) {
             world.playSound(
                     null,
                     pos.getX() + 0.5D,
                     pos.getY() + 0.5D,
                     pos.getZ() + 0.5D,
-                    SoundEvents.ENTITY_VILLAGER_TRADE,
-                    SoundCategory.NEUTRAL,
+                    SoundEvents.VILLAGER_TRADE,
+                    SoundSource.NEUTRAL,
                     0.8F,
                     1.0F
             );

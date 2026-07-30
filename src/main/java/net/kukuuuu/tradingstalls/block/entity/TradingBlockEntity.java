@@ -5,21 +5,20 @@ import net.kukuuuu.tradingstalls.shop.OfferAvailability;
 import net.kukuuuu.tradingstalls.shop.ShopStatus;
 import net.kukuuuu.tradingstalls.shop.TradeOfferData;
 import net.kukuuuu.tradingstalls.shop.VillagerShopVisits;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.storage.ReadView;
-import net.minecraft.storage.WriteView;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import java.util.Optional;
 import net.kukuuuu.tradingstalls.datagen.ModItemTagProvider;
 
@@ -46,34 +45,34 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
 
     public void setOffer(int index, ItemStack payment, ItemStack product) {
         offers.set(index, new TradeOfferData(payment, product));
-        markDirty();
+        setChanged();
     }
 
     public void clearOffer(int index) {
         offers.set(index, TradeOfferData.empty());
-        markDirty();
+        setChanged();
     }
 
-    public static void serverTick(World world, BlockPos pos, BlockState state, TradingBlockEntity tradingBlock) {
-        if (world instanceof ServerWorld serverWorld) {
+    public static void serverTick(Level world, BlockPos pos, BlockState state, TradingBlockEntity tradingBlock) {
+        if (world instanceof ServerLevel serverWorld) {
             tradingBlock.villagerVisits.tick(serverWorld, tradingBlock);
         }
     }
 
     public boolean isVillageConnected() {
-        return world instanceof ServerWorld serverWorld
-                && VillagerShopVisits.hasNearbyVillage(serverWorld, pos);
+        return level instanceof ServerLevel serverWorld
+                && VillagerShopVisits.hasNearbyVillage(serverWorld, worldPosition);
     }
 
     public ShopStatus getShopStatus() {
-        if (world == null || !hasOwner()) {
+        if (level == null || !hasOwner()) {
             return ShopStatus.MISSING_DRAWER;
         }
 
         int matchingDrawers = 0;
         boolean foundWrongOwner = false;
         for (Direction direction :new Direction[]{Direction.DOWN}) {
-            if (world.getBlockEntity(pos.offset(direction)) instanceof CashDrawerBlockEntity drawer) {
+            if (level.getBlockEntity(worldPosition.relative(direction)) instanceof CashDrawerBlockEntity drawer) {
                 if (drawer.isOwnedBy(getOwnerUuid())) {
                     matchingDrawers++;
                 } else {
@@ -121,12 +120,12 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
             return false;
         }
         ItemStack required = offers.get(index).payment();
-        return ItemStack.areItemsAndComponentsEqual(required, suppliedPayment)
+        return ItemStack.isSameItemSameComponents(required, suppliedPayment)
                 && suppliedPayment.getCount() >= required.getCount();
     }
 
-    public boolean executeTrade(int index, Inventory paymentInventory, int paymentSlot) {
-        ItemStack suppliedPayment = paymentInventory.getStack(paymentSlot);
+    public boolean executeTrade(int index, Container paymentInventory, int paymentSlot) {
+        ItemStack suppliedPayment = paymentInventory.getItem(paymentSlot);
         if (!canTrade(index, suppliedPayment)) {
             return false;
         }
@@ -141,7 +140,7 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
         ItemStack product = offer.product();
         InventoryUtils.removeMatching(getInventory(), product, product.getCount());
         drawer.accept(payment);
-        paymentInventory.removeStack(paymentSlot, payment.getCount());
+        paymentInventory.removeItem(paymentSlot, payment.getCount());
         syncInventoryChange();
         syncBlockEntity(drawer);
         return true;
@@ -156,7 +155,7 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
         return false;
     }
 
-    public boolean executeRandomVillagerTrade(Random random) {
+    public boolean executeRandomVillagerTrade(RandomSource random) {
         List<Integer> offerIndexes = new ArrayList<>();
         for (int index = 0; index < OFFER_COUNT; index++) {
             if (canVillagerBuy(index)) {
@@ -168,42 +167,42 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
         }
 
         int offerIndex = offerIndexes.get(random.nextInt(offerIndexes.size()));
-        SimpleInventory generatedPayment = new SimpleInventory(1);
-        generatedPayment.setStack(0, offers.get(offerIndex).payment());
+        SimpleContainer generatedPayment = new SimpleContainer(1);
+        generatedPayment.setItem(0, offers.get(offerIndex).payment());
         return executeTrade(offerIndex, generatedPayment, 0);
     }
 
     private boolean canVillagerBuy(int index) {
         TradeOfferData offer = offers.get(index);
         return offer.isEnabled()
-                && offer.payment().isOf(Items.EMERALD)
+                && offer.payment().is(Items.EMERALD)
                 && offer.payment().getCount() <= MAX_VILLAGER_EMERALD_COST
-                && offer.product().isIn(ModItemTagProvider.VILLAGER_SELLABLE)
+                && offer.product().is(ModItemTagProvider.VILLAGER_SELLABLE)
                 && getOfferAvailability(index) == OfferAvailability.AVAILABLE;
     }
 
     private void syncInventoryChange() {
-        markDirty();
+        setChanged();
         syncBlockEntity(this);
     }
 
     private void syncBlockEntity(OwnedInventoryBlockEntity blockEntity) {
-        if (world != null) {
-            world.updateListeners(
-                    blockEntity.getPos(),
-                    blockEntity.getCachedState(),
-                    blockEntity.getCachedState(),
-                    Block.NOTIFY_LISTENERS
+        if (level != null) {
+            level.sendBlockUpdated(
+                    blockEntity.getBlockPos(),
+                    blockEntity.getBlockState(),
+                    blockEntity.getBlockState(),
+                    Block.UPDATE_CLIENTS
             );
         }
     }
 
     private CashDrawerBlockEntity findLinkedDrawer() {
-        if (world == null || getShopStatus() != ShopStatus.READY) {
+        if (level == null || getShopStatus() != ShopStatus.READY) {
             return null;
         }
         for (Direction direction : Direction.values()) {
-            if (world.getBlockEntity(pos.offset(direction)) instanceof CashDrawerBlockEntity drawer
+            if (level.getBlockEntity(worldPosition.relative(direction)) instanceof CashDrawerBlockEntity drawer
                     && drawer.isOwnedBy(getOwnerUuid())) {
                 return drawer;
             }
@@ -212,11 +211,11 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
     }
 
     @Override
-    protected void writeData(WriteView view) {
-        super.writeData(view);
+    protected void saveAdditional(ValueOutput view) {
+        super.saveAdditional(view);
 
-        WriteView.ListAppender<NbtCompound> appender =
-                view.getListAppender("Offers", NbtCompound.CODEC);
+        ValueOutput.TypedOutputList<CompoundTag> appender =
+                view.list("Offers", CompoundTag.CODEC);
 
         for (TradeOfferData offer : offers) {
             appender.add(offer.toNbt());
@@ -224,14 +223,14 @@ public class TradingBlockEntity extends OwnedInventoryBlockEntity {
     }
 
     @Override
-    protected void readData(ReadView view) {
-        super.readData(view);
+    protected void loadAdditional(ValueInput view) {
+        super.loadAdditional(view);
 
         offers.clear();
 
-        view.getOptionalTypedListView("Offers", NbtCompound.CODEC)
+        view.list("Offers", CompoundTag.CODEC)
                 .ifPresent(list -> {
-                    for (NbtCompound compound : list) {
+                    for (CompoundTag compound : list) {
                         offers.add(TradeOfferData.fromNbt(Optional.of(compound)));
                     }
                 });

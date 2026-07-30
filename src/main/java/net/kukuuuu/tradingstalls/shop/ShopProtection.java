@@ -3,8 +3,8 @@ package net.kukuuuu.tradingstalls.shop;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.kukuuuu.tradingstalls.block.entity.OwnedInventoryBlockEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionResult;
 
 public final class ShopProtection {
     private ShopProtection() {
@@ -14,18 +14,18 @@ public final class ShopProtection {
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             if (world.getBlockEntity(pos) instanceof OwnedInventoryBlockEntity ownedBlock
                     && !ShopAccess.canBreak(player, ownedBlock)) {
-                if (!world.isClient()) {
-                    player.sendMessage(Text.translatable("message.trading-stalls.not_owner"), true);
+                if (!world.isClientSide()) {
+                    player.displayClientMessage(Component.translatable("message.trading-stalls.not_owner"), true);
                 }
-                return ActionResult.FAIL;
+                return InteractionResult.FAIL;
             }
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         });
 
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
             if (blockEntity instanceof OwnedInventoryBlockEntity ownedBlock
                     && !ShopAccess.canBreak(player, ownedBlock)) {
-                player.sendMessage(Text.translatable("message.trading-stalls.not_owner"), true);
+                player.displayClientMessage(Component.translatable("message.trading-stalls.not_owner"), true);
                 return false;
             }
             return true;

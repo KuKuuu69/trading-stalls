@@ -7,105 +7,104 @@ import net.kukuuuu.tradingstalls.screen.BuyerScreenHandler;
 import net.kukuuuu.tradingstalls.screen.MerchantScreenHandler;
 import net.kukuuuu.tradingstalls.screen.ShopScreenData;
 import net.kukuuuu.tradingstalls.shop.ShopAccess;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockRenderType;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.BlockWithEntity;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
-public class TradingBlock extends BlockWithEntity {
-    private static final VoxelShape SHAPE = Block.createCuboidShape(0, 0, 0, 16, 6, 16);
+public class TradingBlock extends BaseEntityBlock {
+    private static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 6, 16);
 
-    public TradingBlock(Settings settings) {
+    public TradingBlock(Properties settings) {
         super(settings);
     }
 
     @Override
-    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
     @Override
-    public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new TradingBlockEntity(pos, state);
     }
 
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
-            World world,
+            Level world,
             BlockState state,
             BlockEntityType<T> type
     ) {
-        return world.isClient()
+        return world.isClientSide()
                 ? null
-                : validateTicker(type, net.kukuuuu.tradingstalls.block.entity.ModBlockEntities.TRADING_BLOCK_ENTITY,
+                : createTickerHelper(type, net.kukuuuu.tradingstalls.block.entity.ModBlockEntities.TRADING_BLOCK_ENTITY,
                 TradingBlockEntity::serverTick);
     }
 
     @Override
-    protected MapCodec<? extends BlockWithEntity> getCodec() {
-        return createCodec(TradingBlock::new);
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return simpleCodec(TradingBlock::new);
     }
 
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
-        super.onPlaced(world, pos, state, placer, itemStack);
-        if (!world.isClient() && placer instanceof PlayerEntity player
+    public void setPlacedBy(Level world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
+        super.setPlacedBy(world, pos, state, placer, itemStack);
+        if (!world.isClientSide() && placer instanceof Player player
                 && world.getBlockEntity(pos) instanceof TradingBlockEntity tradingBlock) {
             tradingBlock.setOwner(player);
         }
     }
 
     @Override
-    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (world.isClient()) {
-            return ActionResult.SUCCESS;
+    protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit) {
+        if (world.isClientSide()) {
+            return InteractionResult.SUCCESS;
         }
         if (!(world.getBlockEntity(pos) instanceof TradingBlockEntity tradingBlock)) {
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         }
         if (!tradingBlock.hasOwner()) {
             tradingBlock.setOwner(player);
         }
 
-        boolean merchantView = tradingBlock.isOwner(player) && !player.isSneaking();
-        player.openHandledScreen(createScreenFactory(tradingBlock, merchantView));
-        return ActionResult.CONSUME;
+        boolean merchantView = tradingBlock.isOwner(player) && !player.isShiftKeyDown();
+        player.openMenu(createScreenFactory(tradingBlock, merchantView));
+        return InteractionResult.CONSUME;
     }
 
     @Override
-    protected float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView world, BlockPos pos) {
+    protected float getDestroyProgress(BlockState state, Player player, BlockGetter world, BlockPos pos) {
         if (world.getBlockEntity(pos) instanceof TradingBlockEntity tradingBlock
                 && !ShopAccess.canBreak(player, tradingBlock)) {
             return 0.0F;
         }
-        return super.calcBlockBreakingDelta(state, player, world, pos);
+        return super.getDestroyProgress(state, player, world, pos);
     }
 
     private ExtendedScreenHandlerFactory<ShopScreenData> createScreenFactory(
@@ -114,19 +113,19 @@ public class TradingBlock extends BlockWithEntity {
     ) {
         return new ExtendedScreenHandlerFactory<>() {
             @Override
-            public ShopScreenData getScreenOpeningData(ServerPlayerEntity player) {
-                return new ShopScreenData(tradingBlock.getPos(), merchantView && tradingBlock.isVillageConnected());
+            public ShopScreenData getScreenOpeningData(ServerPlayer player) {
+                return new ShopScreenData(tradingBlock.getBlockPos(), merchantView && tradingBlock.isVillageConnected());
             }
 
             @Override
-            public Text getDisplayName() {
-                return Text.translatable(merchantView
+            public Component getDisplayName() {
+                return Component.translatable(merchantView
                         ? "screen.trading-stalls.merchant"
                         : "screen.trading-stalls.buyer");
             }
 
             @Override
-            public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
+            public AbstractContainerMenu createMenu(int syncId, Inventory playerInventory, Player player) {
                 return merchantView
                         ? new MerchantScreenHandler(syncId, playerInventory, tradingBlock)
                         : new BuyerScreenHandler(syncId, playerInventory, tradingBlock);
@@ -135,14 +134,14 @@ public class TradingBlock extends BlockWithEntity {
     }
 
     @Override
-    protected void onStateReplaced(BlockState state, ServerWorld world, BlockPos pos, boolean moved) {
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel world, BlockPos pos, boolean moved) {
         if (world.getBlockEntity(pos) instanceof TradingBlockEntity tradingBlock) {
-            ItemScatterer.spawn(world, pos, tradingBlock.getInventory());
+            Containers.dropContents(world, pos, tradingBlock.getInventory());
         }
-        super.onStateReplaced(state, world, pos, moved);
+        super.affectNeighborsAfterRemoval(state, world, pos, moved);
     }
     @Override
-    protected BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.MODEL;
+    protected RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 }

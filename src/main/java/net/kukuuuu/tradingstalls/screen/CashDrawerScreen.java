@@ -1,30 +1,30 @@
 package net.kukuuuu.tradingstalls.screen;
 
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.Inventory;
 
-public class CashDrawerScreen extends HandledScreen<CashDrawerScreenHandler> {
-    private static final Identifier TEXTURE = Identifier.ofVanilla("textures/gui/container/generic_54.png");
+public class CashDrawerScreen extends AbstractContainerScreen<CashDrawerScreenHandler> {
+    private static final Identifier TEXTURE = Identifier.withDefaultNamespace("textures/gui/container/generic_54.png");
 
-    public CashDrawerScreen(CashDrawerScreenHandler handler, PlayerInventory inventory, Text title) {
+    public CashDrawerScreen(CashDrawerScreenHandler handler, Inventory inventory, Component title) {
         super(handler, inventory, title);
-        backgroundHeight = 166;
-        playerInventoryTitleY = 73;
+        imageHeight = 166;
+        inventoryLabelY = 73;
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
-        drawMouseoverTooltip(context, mouseX, mouseY);
+        renderTooltip(context, mouseX, mouseY);
     }
 
     @Override
-    protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-        context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0, 0, backgroundWidth, 71, 256, 256);
-        context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y + 71, 0, 126, backgroundWidth, 96, 256, 256);
+    protected void renderBg(GuiGraphics context, float delta, int mouseX, int mouseY) {
+        context.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, leftPos, topPos, 0, 0, imageWidth, 71, 256, 256);
+        context.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, leftPos, topPos + 71, 0, 126, imageWidth, 96, 256, 256);
     }
 }

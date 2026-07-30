@@ -3,13 +3,15 @@ package net.kukuuuu.tradingstalls.screen;
 import net.kukuuuu.tradingstalls.block.ModBlocks;
 import net.kukuuuu.tradingstalls.block.entity.CashDrawerBlockEntity;
 import net.kukuuuu.tradingstalls.block.entity.OwnedInventoryBlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandlerContext;
-import net.minecraft.screen.slot.Slot;
+import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+
+import java.util.Objects;
 
 public class CashDrawerScreenHandler extends BaseShopScreenHandler {
     private static final int DRAWER_END = OwnedInventoryBlockEntity.INVENTORY_SIZE;
@@ -17,27 +19,27 @@ public class CashDrawerScreenHandler extends BaseShopScreenHandler {
     private static final int PLAYER_END = PLAYER_START + 36;
 
     private final CashDrawerBlockEntity drawer;
-    private final ScreenHandlerContext context;
+    private final ContainerLevelAccess context;
 
-    public CashDrawerScreenHandler(int syncId, PlayerInventory playerInventory, ShopScreenData data) {
-        this(syncId, playerInventory, new SimpleInventory(OwnedInventoryBlockEntity.INVENTORY_SIZE),
-                null, ScreenHandlerContext.EMPTY);
+    public CashDrawerScreenHandler(int syncId, Inventory playerInventory, ShopScreenData data) {
+        this(syncId, playerInventory, new SimpleContainer(OwnedInventoryBlockEntity.INVENTORY_SIZE),
+                null, ContainerLevelAccess.NULL);
     }
 
-    public CashDrawerScreenHandler(int syncId, PlayerInventory playerInventory, CashDrawerBlockEntity drawer) {
+    public CashDrawerScreenHandler(int syncId, Inventory playerInventory, CashDrawerBlockEntity drawer) {
         this(syncId, playerInventory, drawer.getInventory(), drawer,
-                ScreenHandlerContext.create(drawer.getWorld(), drawer.getPos()));
+                ContainerLevelAccess.create(Objects.requireNonNull(drawer.getLevel()), drawer.getBlockPos()));
     }
 
     private CashDrawerScreenHandler(
             int syncId,
-            PlayerInventory playerInventory,
-            Inventory inventory,
+            Inventory playerInventory,
+            Container inventory,
             CashDrawerBlockEntity drawer,
-            ScreenHandlerContext context
+            ContainerLevelAccess context
     ) {
         super(ModScreenHandlers.CASH_DRAWER, syncId);
-        checkSize(inventory, OwnedInventoryBlockEntity.INVENTORY_SIZE);
+        checkContainerSize(inventory, OwnedInventoryBlockEntity.INVENTORY_SIZE);
         this.drawer = drawer;
         this.context = context;
         for (int row = 0; row < 3; row++) {
@@ -49,34 +51,34 @@ public class CashDrawerScreenHandler extends BaseShopScreenHandler {
     }
 
     @Override
-    public ItemStack quickMove(PlayerEntity player, int slotIndex) {
+    public ItemStack quickMoveStack(Player player, int slotIndex) {
         if (slotIndex < 0 || slotIndex >= slots.size()) {
             return ItemStack.EMPTY;
         }
         Slot slot = slots.get(slotIndex);
-        if (!slot.hasStack()) {
+        if (!slot.hasItem()) {
             return ItemStack.EMPTY;
         }
-        ItemStack stack = slot.getStack();
+        ItemStack stack = slot.getItem();
         ItemStack original = stack.copy();
         if (slotIndex < DRAWER_END) {
-            if (!insertItem(stack, PLAYER_START, PLAYER_END, true)) {
+            if (!moveItemStackTo(stack, PLAYER_START, PLAYER_END, true)) {
                 return ItemStack.EMPTY;
             }
-        } else if (!insertItem(stack, 0, DRAWER_END, false)) {
+        } else if (!moveItemStackTo(stack, 0, DRAWER_END, false)) {
             return ItemStack.EMPTY;
         }
         if (stack.isEmpty()) {
-            slot.setStack(ItemStack.EMPTY);
+            slot.setByPlayer(ItemStack.EMPTY);
         } else {
-            slot.markDirty();
+            slot.setChanged();
         }
         return original;
     }
 
     @Override
-    public boolean canUse(PlayerEntity player) {
+    public boolean stillValid(Player player) {
         return drawer == null
-                || drawer.isOwner(player) && canUse(context, player, ModBlocks.CASH_DRAWER);
+                || drawer.isOwner(player) && stillValid(context, player, ModBlocks.CASH_DRAWER);
     }
 }
