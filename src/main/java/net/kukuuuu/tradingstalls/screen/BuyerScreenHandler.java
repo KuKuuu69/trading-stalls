@@ -101,10 +101,53 @@ public class BuyerScreenHandler extends BaseShopScreenHandler {
         if (id < 0 || id >= TradingBlockEntity.OFFER_COUNT) {
             return false;
         }
+
+        ItemStack requiredPayment = tradingBlock != null
+                ? tradingBlock.getOffer(id).payment()
+                : ItemStack.EMPTY;
+
+        ItemStack currentPayment = paymentInventory.getStack(0);
+
+        if (!currentPayment.isEmpty() && !ItemStack.areItemsAndComponentsEqual(currentPayment, requiredPayment)) {
+            if (!player.giveItemStack(currentPayment.copy())) {
+                player.dropItem(currentPayment.copy(), false);
+            }
+            paymentInventory.setStack(0, ItemStack.EMPTY);
+            currentPayment = ItemStack.EMPTY;
+        }
+
+        // Auto-fill
+        if (!requiredPayment.isEmpty()) {
+            int needed = requiredPayment.getCount() - currentPayment.getCount();
+            if (needed > 0) {
+                withdrawFromPlayer(player, requiredPayment, needed);
+            }
+        }
+
         properties.set(1, id);
         refreshOutput();
         sendContentUpdates();
         return true;
+    }
+
+    private void withdrawFromPlayer(PlayerEntity player, ItemStack template, int amount) {
+        PlayerInventory playerInv = player.getInventory();
+        int remaining = amount;
+        for (int slot = 0; slot < playerInv.size() && remaining > 0; slot++) {
+            ItemStack stack = playerInv.getStack(slot);
+            if (ItemStack.areItemsAndComponentsEqual(stack, template) && !stack.isEmpty()) {
+                int taken = Math.min(remaining, stack.getCount());
+                ItemStack current = paymentInventory.getStack(0);
+                if (current.isEmpty()) {
+                    paymentInventory.setStack(0, stack.split(taken));
+                } else {
+                    current.increment(taken);
+                    stack.decrement(taken);
+                }
+                remaining -= taken;
+                playerInv.markDirty();
+            }
+        }
     }
 
     @Override
